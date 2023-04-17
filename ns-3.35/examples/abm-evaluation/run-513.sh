@@ -18,8 +18,8 @@ HOMA=5
 TIMELY=6
 THETAPOWERTCP=7
 
-BUF_ALGS=($DT $FAB $CS $IB $ABM)
-TCP_ALGS=($CUBIC $DCTCP $TIMELY $POWERTCP)
+# BUF_ALGS=($DT $FAB $CS $IB $ABM)
+# TCP_ALGS=($CUBIC $DCTCP $TIMELY $POWERTCP)
 
 SERVERS=32
 LEAVES=2
@@ -46,8 +46,6 @@ STATIC_BUFFER=0
 BUFFER_PER_PORT_PER_GBPS=0.8 #9.6 # https://baiwei0427.github.io/papers/bcc-ton.pdf (Trident 2)
 BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*($SERVERS+$LINKS*$SPINES)*$SERVER_LEAF_CAP))")
 
-TCP=$CUBIC
-
 START_TIME=10
 END_TIME=24
 FLOW_END_TIME=20
@@ -62,12 +60,14 @@ N=0
 BURST_SIZES=0.9
 BURST_SIZE=$(python3 -c "print($BURST_SIZES*$BUFFER)")
 BURST_FREQ=3
-for ALG in $DT ;do
-	for LOAD in 0.9 ;do
-		FLOW_END_TIME=20 #$(python3 -c "print(10+3*0.8/$LOAD)")
-		FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ.fct"
-		TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ.stat"
-		./waf --run "evaluation --load=$LOAD --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --serverCount=$SERVERS --spineCount=$SPINES --leafCount=$LEAVES --linkCount=$LINKS --spineLeafCapacity=$LEAF_SPINE_CAP --leafServerCapacity=$SERVER_LEAF_CAP --linkLatency=$LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --statBuf=$STATIC_BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --request=$BURST_SIZE --queryRequestRate=$BURST_FREQ --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --alphaUpdateInterval=$ALPHA_UPDATE_INT --fctOutFile=$FLOWFILE --torOutFile=$TORFILE"
-	done
+
+TCP=$CUBIC
+ALG=$DT
+
+for LOAD in 0.9 ;do
+	FLOW_END_TIME=20 #$(python3 -c "print(10+3*0.8/$LOAD)")
+	FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ.fct"
+	TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ.stat"
+	./waf --run "evaluation-513 --load=$LOAD --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --serverCount=$SERVERS --spineCount=$SPINES --leafCount=$LEAVES --linkCount=$LINKS --spineLeafCapacity=$LEAF_SPINE_CAP --leafServerCapacity=$SERVER_LEAF_CAP --linkLatency=$LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --statBuf=$STATIC_BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --request=$BURST_SIZE --queryRequestRate=$BURST_FREQ --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --alphaUpdateInterval=$ALPHA_UPDATE_INT --fctOutFile=$FLOWFILE --torOutFile=$TORFILE"
 done
 
