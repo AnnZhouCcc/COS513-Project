@@ -10,8 +10,8 @@ from torch.optim.lr_scheduler import _LRScheduler
 from multiprocessing import cpu_count
 from LSTMClassifier import LSTMClassifier
 
-which_model = 0 # 0 for CUBIC, 1 for Timely
-which_cca = 1 # 1 for CUBIC, 6 for Timely
+which_model = 1 # 0 for CUBIC, 1 for Timely
+which_cca = 6 # 1 for CUBIC, 6 for Timely
 
 num_ports = 40
 
@@ -54,6 +54,7 @@ def create_datasets(X,y):
     enc = LabelEncoder()
     y_enc = enc.fit_transform(y)
     X_grouped = create_grouped_X(X)
+    #X_grouped = X_grouped.transpose(0,2,1)
     X_train, X_valid, y_train, y_valid = train_test_split(X_grouped, y_enc, test_size=valid_size)
     X_train, X_valid = [torch.tensor(arr, dtype=torch.float32) for arr in (X_train, X_valid)]
     y_train, y_valid = [torch.tensor(arr, dtype=torch.long) for arr in (y_train, y_valid)]
@@ -118,18 +119,18 @@ def cosine(t_max, eta_min=0):
 print("Preparing datasets")
 train_dataset, valid_dataset, encoder = create_datasets(x_train_raw,y_train_raw['cca_id'])
 
-batch_size = 80
+batch_size = 32
 print("Creating data loaders")
 train_dl, valid_dl = create_loaders(train_dataset,valid_dataset,batch_size,jobs=cpu_count())
 
 input_dim = 80
-hidden_dim = 256
-layer_dim = 3
+hidden_dim = 36
+layer_dim = 1
 output_dim = 2
 seq_dim = 1000
 
 lr = 0.0005
-n_epochs = 10
+n_epochs = 100
 iterations_per_epoch = len(train_dl)
 best_accuracy = 0
 patience = 100
@@ -169,18 +170,22 @@ for epoch in range(n_epochs):
 
     acc = correct / total
 
-    if epoch % 5 == 0:
-        print(f'Epoch: {epoch:3d}. Loss: {loss.item():.4f}. Acc.: {acc:2.2%}')
+    #if epoch % 5 == 0 or epoch == n_epochs-1:
+    print(f'Epoch: {epoch:3d}. Loss: {loss.item():.4f}. Acc.: {acc:2.2%}')
 
     if acc > best_accuracy:
         trials = 0
         best_accuracy = acc
-        torch.save(model.state_dict(), 'best_'+str(which_cca)+'.pth')
+        torch.save(model.state_dict(), 'best_test_'+str(which_cca)+'_l'+str(layer_dim)+'_d'+str(hidden_dim)+'.pth')
         print(f'Epoch {epoch} best model saved with accuracy: {best_accuracy:2.2%}')
     else:
         trials += 1
         if trials >= patience:
             print(f'Early stopping on epoch {epoch}')
             break
+
+    if best_accuracy == 1:
+        print(f'Early stopping on epoch {epoch}')
+        break
 
 print('The training is finished! Restoring the best model weights')

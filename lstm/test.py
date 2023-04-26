@@ -10,7 +10,7 @@ from LSTMClassifier import LSTMClassifier
 ID_COLS = ['series_id','timestamp']
 
 which_cca_train = 6 # 1 for CUBIC, 6 for Timely
-which_cca_test = 1
+which_cca_test = 6
 
 num_ports = 40
 
@@ -41,39 +41,45 @@ def create_test_dataset(X, drop_cols=ID_COLS):
     X_grouped = np.row_stack([
         group.drop(columns=drop_cols).values[None]
         for _, group in X.groupby('series_id')])
-    X_grouped = torch.tensor(X_grouped.transpose(0, 2, 1)).float()
+    #X_grouped = torch.tensor(X_grouped.transpose(0, 2, 1)).float()
+    X_grouped = torch.tensor(X_grouped).float()
     y_fake = torch.tensor([0] * len(X_grouped)).long()
     return TensorDataset(X_grouped, y_fake)
 
 input_dim = 80
-hidden_dim = 256
-layer_dim = 3
+hidden_dim = 36
+layer_dim = 1
 output_dim = 2
 
 model = LSTMClassifier(input_dim, hidden_dim, layer_dim, output_dim)
-model.load_state_dict(torch.load('best_'+str(which_cca_train)+'.pth'))
+model.load_state_dict(torch.load('best_test_'+str(which_cca_train)+'_l'+str(layer_dim)+'_d'+str(hidden_dim)+'.pth'))
 model.eval()
 
-batch_size = 80
+batch_size = 32
 test_dl = DataLoader(create_test_dataset(x_test_raw), batch_size, shuffle=False)
 
 #test = []
 prob_list = []
 print('Predicting on test dataset')
+count = 0
 for batch, _ in test_dl:
-    batch = batch.permute(0, 2, 1)
+    count += 1
+    #batch = batch.permute(0, 2, 1)
     #out = model(batch.cuda())
     out = model(batch)
     #y_hat = F.log_softmax(out, dim=1).argmax(dim=1)
     #test += y_hat.tolist()
     #prob += F.log_softmax(out, dim=1).tolist()
     prob = F.softmax(out,dim=1)
+    #print(prob)
     top_p, top_label = prob.topk(1,dim=1)
     for p in top_p.tolist():
         prob_list += p
-
+print(count)
+print(len(prob_list))
 #print(prob_list)
 print(sum(prob_list)/len(prob_list))
+np.array(prob_list).tofile('prob/prob_train'+str(which_cca_train)+'_test'+str(which_cca_test)+'.dat')
 #enc = LabelEncoder()
 #enc.fit_transform(y_train_raw['cca_id'])
 #print(prob)
