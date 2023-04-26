@@ -10,8 +10,8 @@ from torch.optim.lr_scheduler import _LRScheduler
 from multiprocessing import cpu_count
 from LSTMClassifier import LSTMClassifier
 
-which_model = 1 # 0 for CUBIC, 1 for Timely
-which_cca = 6 # 1 for CUBIC, 6 for Timely
+which_model = 0 # 0 for CUBIC, 1 for Timely
+which_cca = 1 # 1 for CUBIC, 6 for Timely
 
 num_ports = 40
 
