@@ -11,6 +11,7 @@ ID_COLS = ['series_id','timestamp']
 
 which_cca_train = 6 # 1 for CUBIC, 6 for Timely
 which_cca_test = 6
+hidden_dim = 16
 
 num_ports = 40
 
@@ -47,7 +48,6 @@ def create_test_dataset(X, drop_cols=ID_COLS):
     return TensorDataset(X_grouped, y_fake)
 
 input_dim = 80
-hidden_dim = 36
 layer_dim = 1
 output_dim = 2
 
