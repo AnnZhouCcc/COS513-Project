@@ -87,7 +87,7 @@ for data_cca in data_cca_arr:
         piece_start = 0+i*step_length
         piece_end = piece_start + sequence_length
         piece = df_switch1_test.iloc[piece_start:piece_end,:]
-        piece['series_id'] = i+num_pieces
+        piece['series_id'] = i+num_test_pieces
         piece['timestamp'] = np.arange(sequence_length)
         df_test_list.append(piece)
     data_x_test = pd.concat(df_test_list, ignore_index=True)
