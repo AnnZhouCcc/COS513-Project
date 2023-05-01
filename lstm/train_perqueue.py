@@ -12,13 +12,14 @@ from LSTMClassifier import LSTMClassifier
 
 num_ports = 40
 
-data_path_prefix = "/u/az6922/COS513-Project/preprocess/data/"
+#data_path_prefix = "/u/az6922/COS513-Project/preprocess/data/"
+data_path_prefix = "/home/ruipan/buffer/COS513-Project/preprocess/data/"
 train_data_path = data_path_prefix + "X_perqueue_train.csv"
 target_data_path = data_path_prefix+"y_perqueue_train.csv"
 
 seed = 1
 np.random.seed(seed)
-#torch.cuda.set_device(0)
+torch.cuda.set_device(0)
 
 ID_COLS = ['series_id','timestamp']
 
@@ -112,17 +113,17 @@ def cosine(t_max, eta_min=0):
 print("Preparing datasets")
 train_dataset, valid_dataset, encoder = create_datasets(x_train_raw,y_train_raw['cca_id'])
 
-batch_size = 4096
+batch_size = 512
 print("Creating data loaders")
 train_dl, valid_dl = create_loaders(train_dataset,valid_dataset,batch_size,jobs=cpu_count())
 
 input_dim = 1
 hidden_dim = 256
-layer_dim = 2
+layer_dim = 3
 output_dim = 2
 seq_dim = 1000
 
-lr = 0.0005
+lr = 0.005
 n_epochs = 100
 iterations_per_epoch = len(train_dl)
 best_accuracy = 0
@@ -130,7 +131,7 @@ patience = 100
 trials = 0
 
 model = LSTMClassifier(input_dim, hidden_dim, layer_dim, output_dim)
-#model = model.cuda()
+model = model.cuda()
 criterion = nn.CrossEntropyLoss()
 #criterion = nn.BCELoss()
 opt = torch.optim.RMSprop(model.parameters(), lr=lr)
@@ -141,8 +142,8 @@ print('Start model training')
 for epoch in range(n_epochs):
     for i, (x_batch, y_batch) in enumerate(train_dl):
         model.train()
-        #x_batch = x_batch.cuda()
-        #y_batch = y_batch.cuda()
+        x_batch = x_batch.cuda()
+        y_batch = y_batch.cuda()
         #sched.step()
         opt.zero_grad()
         out = model(x_batch)
@@ -154,8 +155,8 @@ for epoch in range(n_epochs):
     model.eval()
     correct, total = 0, 0
     for x_val, y_val in valid_dl:
-        #x_val, y_val = [t.cuda() for t in (x_val, y_val)]
-        x_val, y_val = [t for t in (x_val, y_val)]
+        x_val, y_val = [t.cuda() for t in (x_val, y_val)]
+        #x_val, y_val = [t for t in (x_val, y_val)]
         out = model(x_val)
         preds = F.log_softmax(out, dim=1).argmax(dim=1)
         total += y_val.size(0)

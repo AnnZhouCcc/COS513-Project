@@ -7,6 +7,10 @@ from torch.utils.data import DataLoader,TensorDataset
 from sklearn.preprocessing import LabelEncoder
 from LSTMClassifier import LSTMClassifier
 
+seed = 1
+np.random.seed(seed)
+torch.cuda.set_device(0)
+
 ID_COLS = ['series_id','timestamp']
 
 hidden_dim = 256
@@ -14,7 +18,8 @@ layer_dim = 2
 
 num_ports = 40
 
-data_path_prefix = "/u/az6922/COS513-Project/preprocess/data/"
+#data_path_prefix = "/u/az6922/COS513-Project/preprocess/data/"
+data_path_prefix = "/home/ruipan/buffer/COS513-Project/preprocess/data/"
 test_data_path = data_path_prefix+"X_perqueue_test.csv"
 ytest_data_path = data_path_prefix+"y_perqueue_test.csv"
 target_data_path = data_path_prefix+"y_perqueue_train.csv"
@@ -48,10 +53,11 @@ input_dim = 1
 output_dim = 2
 
 model = LSTMClassifier(input_dim, hidden_dim, layer_dim, output_dim)
+model = model.cuda()
 model.load_state_dict(torch.load('best_perqueue_l'+str(layer_dim)+'_d'+str(hidden_dim)+'.pth'))
 model.eval()
 
-batch_size = 2048
+batch_size = 512
 test_dl = DataLoader(create_test_dataset(x_test_raw), batch_size, shuffle=False)
 
 test = []
@@ -60,8 +66,8 @@ count = 0
 for batch, _ in test_dl:
     count += 1
     #batch = batch.permute(0, 2, 1)
-    #out = model(batch.cuda())
-    out = model(batch)
+    out = model(batch.cuda())
+    #out = model(batch)
     y_hat = F.log_softmax(out, dim=1).argmax(dim=1)
     test += y_hat.tolist()
 

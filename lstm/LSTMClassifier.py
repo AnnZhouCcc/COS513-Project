@@ -20,5 +20,5 @@ class LSTMClassifier(nn.Module):
     def init_hidden(self, x):
         h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim)
         c0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim)
-        #return [t.cuda() for t in (h0, c0)]
-        return [t for t in (h0, c0)]
+        return [t.cuda() for t in (h0, c0)]
+        #return [t for t in (h0, c0)]
