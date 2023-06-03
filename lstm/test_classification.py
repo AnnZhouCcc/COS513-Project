@@ -9,7 +9,7 @@ from LSTMClassifier import LSTMClassifier
 
 ID_COLS = ['series_id','timestamp']
 
-hidden_dim = 130
+hidden_dim = 128
 layer_dim = 2
 
 num_ports = 40

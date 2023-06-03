@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 import pandas as pd
 import torch
@@ -5,13 +7,22 @@ from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader,TensorDataset
 from sklearn.preprocessing import LabelEncoder
+
 from LSTMClassifier import LSTMClassifier
 
 ID_COLS = ['series_id','timestamp']
 
-which_cca_train = 6 # 1 for CUBIC, 6 for Timely
-which_cca_test = 6
-hidden_dim = 16
+#which_cca_train = 6 # 1 for CUBIC, 6 for Timely
+#which_cca_test = 6
+#hidden_dim = 16
+parser = argparse.ArgumentParser()
+parser.add_argument("--cca_train", type=int, default=1)
+parser.add_argument("--cca_test", type=int, default=1)
+parser.add_argument("--hidden_dim", type=int, default=16)
+args = parser.parse_args()
+which_cca_train = args.cca_train # 1 for CUBIC, 6 for Timely
+which_cca_test = args.cca_test
+hidden_dim = args.hidden_dim
 
 num_ports = 40
 

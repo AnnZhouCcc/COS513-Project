@@ -121,7 +121,7 @@ print("Creating data loaders")
 train_dl, valid_dl = create_loaders(train_dataset,valid_dataset,batch_size,jobs=cpu_count())
 
 input_dim = 80
-hidden_dim = 130
+hidden_dim = 128
 layer_dim = 2
 output_dim = 2
 seq_dim = 1000
