@@ -37,7 +37,7 @@
 
 
 /*Congestion Control Algorithms*/
-// # define RENO 0
+# define RENO 0
 # define CUBIC 1
 # define DCTCP 2
 # define HPCC 3
@@ -58,7 +58,7 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("ABM_EVALUATION");
 
-const uint32_t nPrior = 2;
+const uint32_t nPrior = 1;
 
 uint32_t PORT_START[512]={4444};
 
@@ -124,18 +124,19 @@ InvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_CO
 		<< " " << leafId
 		<< " " << double(BufferSize)/1e6
 		<< " " << 100 * double(sm->GetOccupiedBuffer())/BufferSize;
-
-		// for (uint32_t port = 0; port<queues.GetN(); port++){
-		// 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc>(queues.Get(port));
-		// 	double remaining = genDisc->GetRemainingBuffer();
-		// 	for (uint32_t priority = 0; priority<nPrior; priority++)  {
-		// 		uint32_t qSize = genDisc->GetQueueDiscClass(priority)->GetQueueDisc()->GetNBytes();
-		// 		auto [th, sentBytes] = genDisc->GetThroughputQueue(priority, nanodelay);  // only with c++17
-		// 		uint64_t droppedBytes = genDisc->GetDroppedBytes(priority);
-		// 		uint64_t maxSize = genDisc->GetAlpha(priority)*remaining;
-		// 		*stream->GetStream() << " " << qSize << " " << th << " " << sentBytes << " " << droppedBytes << " " << maxSize;
-		// 	}
-		// }
+/*
+		 for (uint32_t port = 0; port<queues.GetN(); port++){
+		 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc>(queues.Get(port));
+		 	double remaining = genDisc->GetRemainingBuffer();
+		 	for (uint32_t priority = 0; priority<nPrior; priority++)  {
+		 		uint32_t qSize = genDisc->GetQueueDiscClass(priority)->GetQueueDisc()->GetNBytes();
+		 		auto [th, sentBytes] = genDisc->GetThroughputQueue(priority, nanodelay);  // only with c++17
+		 		uint64_t droppedBytes = genDisc->GetDroppedBytes(priority);
+		 		uint64_t maxSize = genDisc->GetAlpha(priority)*remaining;
+		 		*stream->GetStream() << " " << qSize << " " << th << " " << sentBytes << " " << droppedBytes << " " << maxSize;
+		 	}
+		 }
+*/
 		*stream->GetStream() << std::endl;
 	}
 
@@ -433,7 +434,7 @@ main (int argc, char *argv[])
 	cmd.AddValue ("request", "Query Size in Bytes", requestSize);
 	cmd.AddValue("queryRequestRate","Query request rate (poisson arrivals)",queryRequestRate);
 
-	uint32_t nPrior = 2; // number queues in switch ports
+	uint32_t nPrior = 1; // number queues in switch ports
 	cmd.AddValue ("nPrior", "number of priorities",nPrior);
 
 	std::string alphasFile="/home/vamsi/ABM-ns3/ns-3.35/examples/abm-evaluation/alphas"; // On lakewood

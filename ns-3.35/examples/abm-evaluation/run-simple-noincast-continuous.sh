@@ -1,7 +1,7 @@
 
 NS3="/u/az6922/COS513-Project/ns-3.35"
 DIR="$NS3/examples/abm-evaluation"
-DUMP_DIR="/u/az6922/data/"
+DUMP_DIR="/u/az6922/data"
 
 DT=101
 FAB=102
@@ -61,7 +61,7 @@ BURST_SIZES=0.9
 BURST_SIZE=$(python3 -c "print($BURST_SIZES*$BUFFER)")
 BURST_FREQ=3
 
-TCP=$CUBIC
+TCP=$POWERTCP
 ALG=$DT
 
 for LOAD in 0.9 ;do
