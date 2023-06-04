@@ -16,3 +16,6 @@ def build(bld):
     obj = bld.create_ns3_program('evaluation-unimulti',
                                  ['point-to-point', 'traffic-control', 'internet', 'applications'])
     obj.source = ['evaluation-unimulti.cc', 'cdf.c']
+    obj = bld.create_ns3_program('simple-noincast-continuous',
+                                 ['point-to-point', 'traffic-control', 'internet', 'applications'])
+    obj.source = ['simple-noincast-continuous.cc', 'cdf.c']
