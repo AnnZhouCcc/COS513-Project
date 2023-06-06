@@ -124,7 +124,7 @@ InvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_CO
 		<< " " << leafId
 		<< " " << double(BufferSize)/1e6
 		<< " " << 100 * double(sm->GetOccupiedBuffer())/BufferSize;
-/*
+
 		 for (uint32_t port = 0; port<queues.GetN(); port++){
 		 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc>(queues.Get(port));
 		 	double remaining = genDisc->GetRemainingBuffer();
@@ -136,7 +136,6 @@ InvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_CO
 		 		*stream->GetStream() << " " << qSize << " " << th << " " << sentBytes << " " << droppedBytes << " " << maxSize;
 		 	}
 		 }
-*/
 		*stream->GetStream() << std::endl;
 	}
 
@@ -301,13 +300,15 @@ void install_applications (int txLeaf, NodeContainer* servers, double requestRat
 void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
         long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
 {
+    std::cout << "install applications simple-noincast-continuous" << std::endl;
+
     uint64_t flowSize;
 
     uint32_t prior = rand_range(1,numPrior-1);
 
-    // for (int txServer = 0; txServer < SERVER_COUNT; txServer++)
-    // {
-		int txServer = 0;
+    for (int txServer = 0; txServer < 2; txServer++)
+    {
+        std::cout << "txLeaf=" << txLeaf << ", txServer=" << txServer << std::endl;
     	double startTime = START_TIME + poission_gen_interval (requestRate);
         while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
         {
@@ -321,13 +322,16 @@ void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer*
             //     rxLeaf = get_target_leaf(LEAF_COUNT);
             // }
 
-            uint32_t rxServer = rand_range(0,SERVER_COUNT);
+            //uint32_t rxServer = rand_range(0,SERVER_COUNT);
+            uint32_t rxServer = 0;
+            std::cout << "rxLeaf=" << rxLeaf << ", rxServer=" << rxServer << std::endl;
 
         	uint16_t port = PORT_START[rxLeaf*SERVER_COUNT + rxServer]++;
             if (port>PORT_END){
                 port=4444;
                 PORT_START[rxLeaf*SERVER_COUNT + rxServer]=4444;
             }
+            //std::cout << "port=" << port << std::endl;
 
             uint64_t flowSize = gen_random_cdf (cdfTable);
             while(flowSize==0){
@@ -367,7 +371,7 @@ void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer*
             sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
             startTime += poission_gen_interval (requestRate);
         }
-    // }
+    }
     // std::cout << "Finished installation of applications from leaf-"<< fromLeafId << std::endl;
 }
 
@@ -545,6 +549,8 @@ main (int argc, char *argv[])
 		// std::cout << "Alpha-"<< p << " = "<< a << " " << alpha_values[p]<< std::endl;
 		p++;
 	}
+	// AnnC: hard-code alpha for the first queue to be 8
+	alpha_values[0] = 8;
 	aFile.close();
 
 
@@ -590,6 +596,7 @@ main (int argc, char *argv[])
 
 
     /*CC Configuration*/
+    std::cout << "TcpProt=" << TcpProt << std::endl;
     switch (TcpProt){
     	case RENO:
 			Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpNewReno::GetTypeId()));
@@ -836,6 +843,7 @@ main (int argc, char *argv[])
     				genDisc->SetBufferAlgorithm(DT);
     				for(uint32_t n=0;n<nPrior;n++){
                         genDisc->alphas[n] = alpha_values[n];
+			std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
                     }
     				break;
     			case FAB:
@@ -930,6 +938,7 @@ main (int argc, char *argv[])
 		    				genDisc[i]->SetBufferAlgorithm(DT);
 		    				for(uint32_t n=0;n<nPrior;n++){
 		                        genDisc[i]->alphas[n] = alpha_values[n];
+							std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
 		                    }
 		    				break;
 		    			case FAB:
@@ -1007,8 +1016,9 @@ main (int argc, char *argv[])
 	long flowCount=0;
 
 	if (TcpProt != HOMA){
-		for (int fromLeafId = 0; fromLeafId < LEAF_COUNT; fromLeafId ++)
+		for (int fromLeafId = 1; fromLeafId < LEAF_COUNT; fromLeafId ++)
 	    {
+                        std::cout << "fromLeafId=" << fromLeafId << std::endl;
 			install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// install_applications(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// if (queryRequestRate>0 && requestSize>0){
