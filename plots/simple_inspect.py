@@ -1,8 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-tcpname = "dctcp"
-version = 5
+tcpname = "timely"
+version = 7
 dir = "/u/az6922/data/"
 file = dir + "tor-simple-noincast-continuous-"+tcpname+"-"+str(version)+".stat"
 
@@ -47,11 +47,31 @@ def plot_port0():
 			time_list.append(int(array[0])-2000000000)
 			qsize_list.append(int(array[4]))
 
+	#plt.plot(time_list[:1000000],buffer_list[:1000000],label="occupied buffer")
 	plt.plot(time_list,buffer_list,label="occupied buffer")
-	plt.plot(time_list, qsize_list,label="port0 qsize")
+	#plt.plot(time_list[:1000000],qsize_list[:1000000],label="port0 qsize")
+	plt.plot(time_list,qsize_list,label="port0 qsize")
 	plt.title(tcpname+", leaf0")
 	plt.legend()
 	plt.savefig(dir+"simple_inspect_plot_port0.pdf")
+
+
+def plot_buffer():
+	buffer_list = list()
+	time_list = list()
+	with open(file) as f:
+		line_count = -1
+		for line in f:
+			line_count += 1
+			if line_count%2 == 0: continue
+			array = [x for x in line.split()]
+			buffer_list.append(float(array[3])*float(array[2])*10000)
+			time_list.append(int(array[0])-2000000000)
+
+	plt.plot(time_list,buffer_list,label="occupied buffer")
+	plt.title(tcpname+", leaf0")
+	plt.legend()
+	plt.savefig(dir+"simple_inspect_plot_buffer.pdf")
 
 
 def inspect():
@@ -93,4 +113,4 @@ def count():
 
 
 if __name__ == "__main__":
-	plot_port0()
+	plot_buffer()

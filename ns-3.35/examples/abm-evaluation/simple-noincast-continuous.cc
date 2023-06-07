@@ -125,6 +125,7 @@ InvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_CO
 		<< " " << double(BufferSize)/1e6
 		<< " " << 100 * double(sm->GetOccupiedBuffer())/BufferSize;
 
+/*
 		 for (uint32_t port = 0; port<queues.GetN(); port++){
 		 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc>(queues.Get(port));
 		 	double remaining = genDisc->GetRemainingBuffer();
@@ -136,6 +137,7 @@ InvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_CO
 		 		*stream->GetStream() << " " << qSize << " " << th << " " << sentBytes << " " << droppedBytes << " " << maxSize;
 		 	}
 		 }
+*/
 		*stream->GetStream() << std::endl;
 	}
 
@@ -1099,8 +1101,8 @@ main (int argc, char *argv[])
 		for (int fromLeafId = 1; fromLeafId < LEAF_COUNT; fromLeafId ++)
 	    {
                         std::cout << "fromLeafId=" << fromLeafId << std::endl;
-			install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
-			// install_applications_simple_noincast_bursty(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+			// install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+			install_applications_simple_noincast_bursty(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// install_applications(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// if (queryRequestRate>0 && requestSize>0){
 			// 	install_applications_incast(fromLeafId, servers, queryRequestRate,requestSize, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, QUERY_START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
