@@ -297,10 +297,10 @@ void install_applications (int txLeaf, NodeContainer* servers, double requestRat
 
 
 
-void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
+void install_applications_simple_noincast_bursty (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
         long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
 {
-    std::cout << "install applications simple-noincast-continuous" << std::endl;
+    std::cout << "install applications simple-noincast-bursty" << std::endl;
 
     uint64_t flowSize;
 
@@ -371,6 +371,86 @@ void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer*
             sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
             startTime += poission_gen_interval (requestRate);
         }
+    }
+    // std::cout << "Finished installation of applications from leaf-"<< fromLeafId << std::endl;
+}
+
+
+
+void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
+        long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
+{
+    std::cout << "install applications simple-noincast-continuous" << std::endl;
+
+    uint64_t flowSize = 1e9;
+
+    uint32_t prior = rand_range(1,numPrior-1);
+
+    for (int txServer = 0; txServer < 2; txServer++)
+    {
+        std::cout << "txLeaf=" << txLeaf << ", txServer=" << txServer << std::endl;
+    	double startTime = START_TIME + poission_gen_interval (requestRate);
+        // while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
+        // {
+        	// Permutation demand matrix
+        	int rxLeaf=txLeaf+1;
+            if (rxLeaf==LEAF_COUNT){
+            	rxLeaf = 0;
+            }
+            // int rxLeaf=txLeaf;
+            // while (txLeaf==rxLeaf){
+            //     rxLeaf = get_target_leaf(LEAF_COUNT);
+            // }
+
+            //uint32_t rxServer = rand_range(0,SERVER_COUNT);
+            uint32_t rxServer = 0;
+            std::cout << "rxLeaf=" << rxLeaf << ", rxServer=" << rxServer << std::endl;
+
+        	uint16_t port = PORT_START[rxLeaf*SERVER_COUNT + rxServer]++;
+            if (port>PORT_END){
+                port=4444;
+                PORT_START[rxLeaf*SERVER_COUNT + rxServer]=4444;
+            }
+            //std::cout << "port=" << port << std::endl;
+
+            // uint64_t flowSize = gen_random_cdf (cdfTable);
+            // while(flowSize==0){
+            //     flowSize=gen_random_cdf (cdfTable);
+            // }
+
+        	Ptr<Node> rxNode = servers[rxLeaf].Get (rxServer);
+        	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
+        	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
+            Ipv4Address rxAddress = rxInterface.GetLocal ();
+
+            InetSocketAddress ad (rxAddress, port);
+            Address sinkAddress(ad);
+            Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+            bulksend->SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
+            bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+            bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+            bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
+            bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
+            bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
+            bulksend->SetAttribute("InitialCwnd", UintegerValue (55));
+			bulksend->SetAttribute("priority",UintegerValue(prior));
+            bulksend->SetStartTime (Seconds(startTime));
+            bulksend->SetStopTime (Seconds (END_TIME));
+            servers[txLeaf].Get (txServer)->AddApplication(bulksend);
+
+            PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
+            ApplicationContainer sinkApp = sink.Install (servers[rxLeaf].Get(rxServer));
+            sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+            sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0)); // ack packets are prioritized
+            sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0)); // ack packets are prioritized
+            sinkApp.Get(0)->SetAttribute("flowId",UintegerValue(flowCount));
+            sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(prior));
+            flowCount+=1;
+            sinkApp.Start (Seconds(startTime));
+            sinkApp.Stop (Seconds (END_TIME));
+            sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+            // startTime += poission_gen_interval (requestRate);
+        // }
     }
     // std::cout << "Finished installation of applications from leaf-"<< fromLeafId << std::endl;
 }
@@ -1020,6 +1100,7 @@ main (int argc, char *argv[])
 	    {
                         std::cout << "fromLeafId=" << fromLeafId << std::endl;
 			install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+			// install_applications_simple_noincast_bursty(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// install_applications(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// if (queryRequestRate>0 && requestSize>0){
 			// 	install_applications_incast(fromLeafId, servers, queryRequestRate,requestSize, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, QUERY_START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
