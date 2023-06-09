@@ -1,8 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-tcpname = "timely"
-version = 7
+tcpname = "dctcp"
+version = 8
 dir = "/u/az6922/data/"
 file = dir + "tor-simple-noincast-continuous-"+tcpname+"-"+str(version)+".stat"
 

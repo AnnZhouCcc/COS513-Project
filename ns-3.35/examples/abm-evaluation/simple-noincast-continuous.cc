@@ -274,7 +274,7 @@ void install_applications (int txLeaf, NodeContainer* servers, double requestRat
             bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
             bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
             bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
-            bulksend->SetAttribute("InitialCwnd", UintegerValue (55));
+            bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
 			bulksend->SetAttribute("priority",UintegerValue(prior));
             bulksend->SetStartTime (Seconds(startTime));
             bulksend->SetStopTime (Seconds (END_TIME));
@@ -303,6 +303,7 @@ void install_applications_simple_noincast_bursty (int txLeaf, NodeContainer* ser
         long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
 {
     std::cout << "install applications simple-noincast-bursty" << std::endl;
+    std::cout << "requestRate=" << requestRate << std::endl;
 
     uint64_t flowSize;
 
@@ -314,6 +315,7 @@ void install_applications_simple_noincast_bursty (int txLeaf, NodeContainer* ser
     	double startTime = START_TIME + poission_gen_interval (requestRate);
         while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
         {
+		std::cout << "startTime=" << startTime << std::endl;
         	// Permutation demand matrix
         	int rxLeaf=txLeaf+1;
             if (rxLeaf==LEAF_COUNT){
@@ -354,7 +356,7 @@ void install_applications_simple_noincast_bursty (int txLeaf, NodeContainer* ser
             bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
             bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
             bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
-            bulksend->SetAttribute("InitialCwnd", UintegerValue (55));
+            bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
 			bulksend->SetAttribute("priority",UintegerValue(prior));
             bulksend->SetStartTime (Seconds(startTime));
             bulksend->SetStopTime (Seconds (END_TIME));
@@ -434,7 +436,7 @@ void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer*
             bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
             bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
             bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
-            bulksend->SetAttribute("InitialCwnd", UintegerValue (55));
+            bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
 			bulksend->SetAttribute("priority",UintegerValue(prior));
             bulksend->SetStartTime (Seconds(startTime));
             bulksend->SetStopTime (Seconds (END_TIME));
@@ -1101,7 +1103,7 @@ main (int argc, char *argv[])
 		for (int fromLeafId = 1; fromLeafId < LEAF_COUNT; fromLeafId ++)
 	    {
                         std::cout << "fromLeafId=" << fromLeafId << std::endl;
-			// install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+			//install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			install_applications_simple_noincast_bursty(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// install_applications(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// if (queryRequestRate>0 && requestSize>0){
