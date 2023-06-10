@@ -899,7 +899,8 @@ main (int argc, char *argv[])
 	tchPfifoFastAccess.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("1000p"));
 
 	TrafficControlHelper tchBottleneck;
-	uint16_t handle;
+	// AnnC: [artemis-star-topology] declared above
+	// uint16_t handle;
     if (queueDiscType.compare ("PfifoFast") == 0)
     {
 		handle = tchBottleneck.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize",
@@ -1016,7 +1017,7 @@ main (int argc, char *argv[])
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (flowsPacketsSize));
 	// Set TCP Protocol for all instantiated TCP Sockets
-	// AnnC: [artemis-star-topology] try
+	// AnnC: [artemis-star-topology] should swap to TCP type defined in macro (or maybe not?)
 	std::string tcpProtocol = "TcpNewReno";
 	if (tcpProtocol != "TcpBasic") { 
 		Config::Set ("/NodeList/*/$ns3::TcpL4Protocol/SocketType", TypeIdValue (TypeId::LookupByName ("ns3::" + tcpProtocol)));
