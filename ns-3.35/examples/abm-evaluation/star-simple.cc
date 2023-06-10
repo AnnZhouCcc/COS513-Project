@@ -895,7 +895,132 @@ main (int argc, char *argv[])
 	stack.InstallAll ();
 
 
+	TrafficControlHelper tchPfifoFastAccess;
+	tchPfifoFastAccess.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("1000p"));
+
+	TrafficControlHelper tchBottleneck;
+	uint16_t handle;
+    if (queueDiscType.compare ("PfifoFast") == 0)
+    {
+		handle = tchBottleneck.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize",
+                                      QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    }
+    else if (queueDiscType.compare ("ARED") == 0)
+    {
+		handle = tchBottleneck.SetRootQueueDisc ("ns3::RedQueueDisc");
+		Config::SetDefault ("ns3::RedQueueDisc::ARED", BooleanValue (true));
+		Config::SetDefault ("ns3::RedQueueDisc::MaxSize",
+                          QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    }
+    else if (queueDiscType.compare ("CoDel") == 0)
+    {
+		handle = tchBottleneck.SetRootQueueDisc ("ns3::CoDelQueueDisc");
+		Config::SetDefault ("ns3::CoDelQueueDisc::MaxSize",
+                          QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    }
+    else if (queueDiscType.compare ("FqCoDel") == 0)
+    {
+		handle = tchBottleneck.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
+		Config::SetDefault ("ns3::FqCoDelQueueDisc::MaxSize",
+                          QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    }
+    else if (queueDiscType.compare ("PIE") == 0)
+    {
+		handle = tchBottleneck.SetRootQueueDisc ("ns3::PieQueueDisc");
+		Config::SetDefault ("ns3::PieQueueDisc::MaxSize",
+                          QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    }
+    else if (queueDiscType.compare ("prio") == 0)
+    {
+		handle = tchBottleneck.SetRootQueueDisc ("ns3::PrioQueueDisc", "Priomap",
+                                                        StringValue ("0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"));
+		TrafficControlHelper::ClassIdList cid = tchBottleneck.AddQueueDiscClasses (handle, 2, "ns3::QueueDiscClass");
+		tchBottleneck.AddChildQueueDisc (handle, cid[0], "ns3::FifoQueueDisc");
+		tchBottleneck.AddChildQueueDisc (handle, cid[1], "ns3::RedQueueDisc");
+    }
 	
+	
+	NetDeviceContainer devicesn0nd = accessLink.Install (n0.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn0nd);
+  	NetDeviceContainer devicesn1nd = accessLink.Install (n1.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn1nd);
+	NetDeviceContainer devicesn2nd = accessLink.Install (n2.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn2nd);
+	NetDeviceContainer devicesn3nd = accessLink.Install (n3.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn3nd);
+	NetDeviceContainer devicesn4nd = accessLink.Install (n4.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn4nd);
+	NetDeviceContainer devicesn5nd = accessLink.Install (n5.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn5nd);
+	NetDeviceContainer devicesn6nd = accessLink.Install (n6.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn6nd);
+	NetDeviceContainer devicesn7nd = accessLink.Install (n7.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn7nd);
+	NetDeviceContainer devicesn8nd = accessLink.Install (n8.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn8nd);
+	NetDeviceContainer devicesn9nd = accessLink.Install (n9.Get (0), nd.Get (0));
+	tchPfifoFastAccess.Install (devicesn9nd);
+  
+	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), ns.Get (0));
+	QueueDiscContainer qdiscs;
+	if (!dropTail) {
+		qdiscs = tchBottleneck.Install (devicesBottleneckLink);
+	}
+
+  
+  	Ipv4AddressHelper address;
+	// address.SetBase ("192.168.0.0", "255.255.255.0");
+	address.SetBase ("10.1.0.0", "255.255.252.0");
+	address.NewNetwork ();
+	Ipv4InterfaceContainer interfacesn0nd = address.Assign (devicesn0nd);
+	address.NewNetwork();
+	Ipv4InterfaceContainer interfacesn1nd = address.Assign (devicesn1nd);
+	address.NewNetwork();
+	Ipv4InterfaceContainer interfacesn2nd = address.Assign (devicesn2nd);
+	address.NewNetwork();
+	Ipv4InterfaceContainer interfacesn3nd = address.Assign (devicesn3nd);
+	address.NewNetwork();
+	Ipv4InterfaceContainer interfacesn4nd = address.Assign (devicesn4nd);
+	address.NewNetwork();
+	Ipv4InterfaceContainer interfacesn5nd = address.Assign (devicesn5nd);
+	address.NewNetwork();
+	Ipv4InterfaceContainer interfacesn6nd = address.Assign (devicesn6nd);
+	address.NewNetwork();
+	Ipv4InterfaceContainer interfacesn7nd = address.Assign (devicesn7nd);
+	address.NewNetwork();
+	Ipv4InterfaceContainer interfacesn8nd = address.Assign (devicesn8nd);
+	address.NewNetwork();
+	Ipv4InterfaceContainer interfacesn9nd = address.Assign (devicesn9nd);
+	address.NewNetwork ();
+	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
+
+
+	Ipv4InterfaceContainer n0Interface, n1Interface, n2Interface, n3Interface, n4Interface, n5Interface, n6Interface, n7Interface, n8Interface, n9Interface; 
+	n0Interface.Add (interfacesn0nd.Get (0));
+	n1Interface.Add (interfacesn1nd.Get (0));
+	n2Interface.Add (interfacesn2nd.Get (0));
+	n3Interface.Add (interfacesn3nd.Get (0));
+	n4Interface.Add (interfacesn4nd.Get (0));
+	n5Interface.Add (interfacesn5nd.Get (0));
+	n6Interface.Add (interfacesn6nd.Get (0));
+	n7Interface.Add (interfacesn7nd.Get (0));
+	n8Interface.Add (interfacesn8nd.Get (0));
+	n9Interface.Add (interfacesn9nd.Get (0));
+
+	Ipv4InterfaceContainer nsInterface;
+  	nsInterface.Add (interfacesBottleneck.Get (1));
+
+
+	// AnnC: [artemis-star-topology] pass in flowsPacketsSize as a parameter
+	uint32_t flowsPacketsSize = 1000;
+	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+	Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (flowsPacketsSize));
+	// Set TCP Protocol for all instantiated TCP Sockets
+	// AnnC: [artemis-star-topology] try
+	std::string tcpProtocol = "TcpNewReno";
+	if (tcpProtocol != "TcpBasic") { 
+		Config::Set ("/NodeList/*/$ns3::TcpL4Protocol/SocketType", TypeIdValue (TypeId::LookupByName ("ns3::" + tcpProtocol)));
+	}
 
 
     NodeContainer spines;
