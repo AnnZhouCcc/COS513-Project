@@ -849,6 +849,55 @@ main (int argc, char *argv[])
 			return 0;
     }
 
+	/****************************************************************/
+	/* Swap to a star topology                                      */
+	/* Reference: https://github.com/netsyn-princeton/cc-aqm-bm-ns3 */
+	/****************************************************************/
+
+	int numNodes = 10;
+	NodeContainer n0, n1, n2, n3, n4, n5, n6, n7, n8, n9, nd, ns; 
+	n0.Create (1);
+	n1.Create (1);
+	n2.Create (1);
+	n3.Create (1);
+	n4.Create (1);
+	n5.Create (1);
+	n6.Create (1);
+	n7.Create (1);
+	n8.Create (1);
+	n9.Create (1);
+	nd.Create (1);
+	ns.Create (1);
+
+
+	// AnnC: [artemis-star-topology] add in proper queue management; for now, assume droptail
+	std::string queueDiscType = "droptail";
+	bool dropTail = (queueDiscType == "droptail");
+	// AnnC: [artemis-star-topology] add in max queue size for droptail
+	uint32_t queueDiscSize = 10;
+
+	PointToPointHelper accessLink;
+	accessLink.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
+	accessLink.SetChannelAttribute ("Delay", StringValue ("0.1ms"));
+	if (dropTail) {
+		accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
+	}
+
+	PointToPointHelper bottleneckLink;
+	bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (LEAF_SERVER_CAPACITY)));
+	bottleneckLink.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
+	if (dropTail) {
+		bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
+	}
+
+
+	InternetStackHelper stack;
+	stack.InstallAll ();
+
+
+	
+
+
     NodeContainer spines;
 	spines.Create (SPINE_COUNT);
 	NodeContainer leaves;
