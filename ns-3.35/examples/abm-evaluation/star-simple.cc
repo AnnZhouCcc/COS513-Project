@@ -1018,10 +1018,53 @@ main (int argc, char *argv[])
 	Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (flowsPacketsSize));
 	// Set TCP Protocol for all instantiated TCP Sockets
 	// AnnC: [artemis-star-topology] should swap to TCP type defined in macro (or maybe not?)
+	// AnnC: [artemis-star-topology] double check: SocketType may have been defined before
 	std::string tcpProtocol = "TcpNewReno";
 	if (tcpProtocol != "TcpBasic") { 
 		Config::Set ("/NodeList/*/$ns3::TcpL4Protocol/SocketType", TypeIdValue (TypeId::LookupByName ("ns3::" + tcpProtocol)));
 	}
+
+
+	// Install applications
+	// AnnC: [artemis-star-topology] moved up from below
+	NS_LOG_INFO ("Initialize CDF table");
+	struct cdf_table* cdfTable = new cdf_table ();
+	init_cdf (cdfTable);
+	load_cdf (cdfTable, cdfFileName.c_str ());
+
+	uint16_t port = 9;
+  	ApplicationContainer sinkApps, sourceApps;
+  	// Configure and install upload flow
+  	Address addUp (InetSocketAddress (Ipv4Address::GetAny (), port));
+  	PacketSinkHelper sinkHelperUp ("ns3::TcpSocketFactory", addUp);
+  	sinkHelperUp.SetAttribute ("Protocol", TypeIdValue (TcpSocketFactory::GetTypeId ()));
+  	sinkApps.Add (sinkHelperUp.Install (ns));
+
+  	InetSocketAddress socketAddressUp = InetSocketAddress (nsInterface.GetAddress (0), port);
+  	BulkSendHelper bulkSendHelperUp ("ns3::TcpSocketFactory", Address ());
+  	bulkSendHelperUp.SetAttribute ("Remote", AddressValue (socketAddressUp));
+
+  	NodeContainer nodecontainers[numNodes] = {n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
+  	uint64_t allflows = 0;
+  	srand(randomSeed);
+  	for (int i = 0; i < numNodes; i++) {
+		//uint64_t flowSize = 1000000000000;
+		uint64_t flowSize = gen_random_cdf(cdfTable);
+		while (flowSize == 0) { flowSize = gen_random_cdf(cdfTable); }
+		allflows += flowSize;
+		bulkSendHelperUp.SetAttribute ("MaxBytes", UintegerValue (flowSize));
+		sourceApps.Add (bulkSendHelperUp.Install (nodecontainers[i]));
+		double startTime = poission_gen_interval(0.2);
+		std::cout << startTime << std::endl;
+		sourceApps.Get(i)->SetStartTime (Seconds (startTime));
+	}
+
+	// AnnC: [artemis-star-topology] need to check whether it is right to set 0 & END_TIME; we also have a startTime
+	sinkApps.Start (Seconds (0));
+  	sinkApps.Stop  (Seconds (END_TIME));
+  	sourceApps.Stop (Seconds (END_TIME - 0.1));
+
+
 
 
     NodeContainer spines;
@@ -1254,10 +1297,10 @@ main (int argc, char *argv[])
 
 	double oversubRatio = static_cast<double>(SERVER_COUNT * LEAF_SERVER_CAPACITY) / (SPINE_LEAF_CAPACITY * SPINE_COUNT * LINK_COUNT);
 	NS_LOG_INFO ("Over-subscription ratio: " << oversubRatio);
-	NS_LOG_INFO ("Initialize CDF table");
-	struct cdf_table* cdfTable = new cdf_table ();
-	init_cdf (cdfTable);
-	load_cdf (cdfTable, cdfFileName.c_str ());
+	// NS_LOG_INFO ("Initialize CDF table");
+	// struct cdf_table* cdfTable = new cdf_table ();
+	// init_cdf (cdfTable);
+	// load_cdf (cdfTable, cdfFileName.c_str ());
 	NS_LOG_INFO ("Calculating request rate");
 	double requestRate = load * LEAF_SERVER_CAPACITY * SERVER_COUNT / oversubRatio / (8 * avg_cdf (cdfTable)) / SERVER_COUNT;
 	NS_LOG_INFO ("Average request rate: " << requestRate << " per second");
