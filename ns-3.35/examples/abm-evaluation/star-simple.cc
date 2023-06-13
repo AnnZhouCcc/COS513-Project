@@ -70,9 +70,12 @@ AsciiTraceHelper asciiTraceHelper;
 Ptr<OutputStreamWrapper> torStats;
 AsciiTraceHelper torTraceHelper;
 
-Ptr<SharedMemoryBuffer> sharedMemoryLeaf[10];
-QueueDiscContainer northQueues[10];
-QueueDiscContainer ToRQueueDiscs[10];//MA
+// Ptr<SharedMemoryBuffer> sharedMemoryLeaf[10];
+Ptr<SharedMemoryBuffer> sharedMemory;
+
+// QueueDiscContainer northQueues[10];
+// QueueDiscContainer ToRQueueDiscs[10];//MA
+QueueDiscContainer bottleneckQueueDiscs;
 
 double poission_gen_interval(double avg_rate)
 {
@@ -82,382 +85,432 @@ double poission_gen_interval(double avg_rate)
        return 0;
 }
 
-template<typename T>
-T rand_range (T min, T max)
-{
-    return min + ((double)max - min) * rand () / RAND_MAX;
-}
+// template<typename T>
+// T rand_range (T min, T max)
+// {
+//     return min + ((double)max - min) * rand () / RAND_MAX;
+// }
 
-double baseRTTNano;
-double nicBw;
-void TraceMsgFinish (Ptr<OutputStreamWrapper> stream, double size, double start, bool incast,uint32_t prior )
-{
-  double fct, standalone_fct,slowdown;
-	fct = Simulator::Now().GetNanoSeconds()- start;
-	standalone_fct = baseRTTNano + size*8.0/ nicBw;
-	slowdown = fct/standalone_fct;
+// double baseRTTNano;
+// double nicBw;
+// void TraceMsgFinish (Ptr<OutputStreamWrapper> stream, double size, double start, bool incast,uint32_t prior )
+// {
+//   double fct, standalone_fct,slowdown;
+// 	fct = Simulator::Now().GetNanoSeconds()- start;
+// 	standalone_fct = baseRTTNano + size*8.0/ nicBw;
+// 	slowdown = fct/standalone_fct;
 
-	*stream->GetStream ()
-	<< Simulator::Now().GetNanoSeconds()
-  	<< " " << size
-  	<< " " << fct
-  	<< " " << standalone_fct
-  	<< " " << slowdown
-  	<< " " << baseRTTNano/1e3
-  	<< " " << (start/1e3- Seconds(10).GetMicroSeconds())
-	<< " " << prior
-	<< " " << incast
-	<< std::endl;
-}
+// 	*stream->GetStream ()
+// 	<< Simulator::Now().GetNanoSeconds()
+//   	<< " " << size
+//   	<< " " << fct
+//   	<< " " << standalone_fct
+//   	<< " " << slowdown
+//   	<< " " << baseRTTNano/1e3
+//   	<< " " << (start/1e3- Seconds(10).GetMicroSeconds())
+// 	<< " " << prior
+// 	<< " " << incast
+// 	<< std::endl;
+// }
 
-void
-InvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_COUNT, double nanodelay){
+
+void StarTopologyInvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_COUNT, double nanodelay){
 
 	int64_t currentNanoSeconds = Simulator::Now().GetNanoSeconds();
 
-	for(int leafId = 0; leafId < LEAF_COUNT; leafId += 1) {
-		Ptr<SharedMemoryBuffer> sm = sharedMemoryLeaf[leafId];
-		QueueDiscContainer queues = ToRQueueDiscs[leafId];
+	Ptr<SharedMemoryBuffer> pbuffer = sharedMemory;
+	QueueDiscContainer pqueues = bottleneckQueueDiscs;
 
-		*stream->GetStream()
-		<< currentNanoSeconds
-		<< " " << leafId
-		<< " " << double(BufferSize)/1e6
-		<< " " << 100 * double(sm->GetOccupiedBuffer())/BufferSize;
-
-/*
-		 for (uint32_t port = 0; port<queues.GetN(); port++){
-		 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc>(queues.Get(port));
-		 	double remaining = genDisc->GetRemainingBuffer();
-		 	for (uint32_t priority = 0; priority<nPrior; priority++)  {
-		 		uint32_t qSize = genDisc->GetQueueDiscClass(priority)->GetQueueDisc()->GetNBytes();
-		 		auto [th, sentBytes] = genDisc->GetThroughputQueue(priority, nanodelay);  // only with c++17
-		 		uint64_t droppedBytes = genDisc->GetDroppedBytes(priority);
-		 		uint64_t maxSize = genDisc->GetAlpha(priority)*remaining;
-		 		*stream->GetStream() << " " << qSize << " " << th << " " << sentBytes << " " << droppedBytes << " " << maxSize;
-		 	}
-		 }
-*/
-		*stream->GetStream() << std::endl;
+	*stream->GetStream() << currentNanoSeconds << " " << double(BufferSize)/1e6 << " " << 100 * double(pbuffer->GetOccupiedBuffer())/BufferSize;
+	for (uint32_t port = 0; port<pqueues.GetN(); port++) {
+		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc>(pqueues.Get(port));
+		double remaining = genDisc->GetRemainingBuffer();
+		for (uint32_t priority = 0; priority<nPrior; priority++)  {
+			uint32_t qSize = genDisc->GetQueueDiscClass(priority)->GetQueueDisc()->GetNBytes();
+			auto [th, sentBytes] = genDisc->GetThroughputQueue(priority, nanodelay);  // only with c++17
+			uint64_t droppedBytes = genDisc->GetDroppedBytes(priority);
+			uint64_t maxSize = genDisc->GetAlpha(priority)*remaining;
+			*stream->GetStream() << " " << qSize << " " << th << " " << sentBytes << " " << droppedBytes << " " << maxSize;
+		}
 	}
+	*stream->GetStream() << std::endl;
 
-	Simulator::Schedule(NanoSeconds(nanodelay), InvokeToRStats, stream, BufferSize, LEAF_COUNT, nanodelay);
+	// for(int leafId = 0; leafId < LEAF_COUNT; leafId += 1) {
+	// 	Ptr<SharedMemoryBuffer> sm = sharedMemoryLeaf[leafId];
+	// 	QueueDiscContainer queues = ToRQueueDiscs[leafId];
+
+	// 	*stream->GetStream()
+	// 	<< currentNanoSeconds
+	// 	<< " " << leafId
+	// 	<< " " << double(BufferSize)/1e6
+	// 	<< " " << 100 * double(sm->GetOccupiedBuffer())/BufferSize;
+
+	// 	 for (uint32_t port = 0; port<queues.GetN(); port++){
+	// 	 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc>(queues.Get(port));
+	// 	 	double remaining = genDisc->GetRemainingBuffer();
+	// 	 	for (uint32_t priority = 0; priority<nPrior; priority++)  {
+	// 	 		uint32_t qSize = genDisc->GetQueueDiscClass(priority)->GetQueueDisc()->GetNBytes();
+	// 	 		auto [th, sentBytes] = genDisc->GetThroughputQueue(priority, nanodelay);  // only with c++17
+	// 	 		uint64_t droppedBytes = genDisc->GetDroppedBytes(priority);
+	// 	 		uint64_t maxSize = genDisc->GetAlpha(priority)*remaining;
+	// 	 		*stream->GetStream() << " " << qSize << " " << th << " " << sentBytes << " " << droppedBytes << " " << maxSize;
+	// 	 	}
+	// 	 }
+	// 	*stream->GetStream() << std::endl;
+	// }
+
+	Simulator::Schedule(NanoSeconds(nanodelay), StarTopologyInvokeToRStats, stream, BufferSize, LEAF_COUNT, nanodelay);
 }
 
 
-int tar=0;
-int get_target_leaf(int leafCount){
-tar+=1;
-    if(tar==leafCount){
-        tar=0;
-        return tar;
-    }
-    return tar;
-}
+// void 
+// InvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_COUNT, double nanodelay){
 
-void install_applications_incast (int incastLeaf, NodeContainer* servers, double requestRate,uint32_t requestSize, struct cdf_table *cdfTable,
-        long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
-{
-	int fan = SERVER_COUNT;
-    uint64_t flowSize = double(requestSize) / double(fan);
+// 	int64_t currentNanoSeconds = Simulator::Now().GetNanoSeconds();
 
-    uint32_t prior = rand_range(1,numPrior-1);
+// 	for(int leafId = 0; leafId < LEAF_COUNT; leafId += 1) {
+// 		Ptr<SharedMemoryBuffer> sm = sharedMemoryLeaf[leafId];
+// 		QueueDiscContainer queues = ToRQueueDiscs[leafId];
 
-    for (int incastServer = 0; incastServer < SERVER_COUNT; incastServer++)
-    {
-    	double startTime = START_TIME + poission_gen_interval (requestRate);
-        while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
-        {
-            // Permutation demand matrix
-        	int txLeaf=incastLeaf+1;
-            if (txLeaf==LEAF_COUNT){
-            	txLeaf = 0;
-            }
-            // int txLeaf=incastLeaf;
-            // while (txLeaf==incastLeaf){
-            //     txLeaf = get_target_leaf(LEAF_COUNT);
-            // }
+// 		*stream->GetStream()
+// 		<< currentNanoSeconds
+// 		<< " " << leafId
+// 		<< " " << double(BufferSize)/1e6
+// 		<< " " << 100 * double(sm->GetOccupiedBuffer())/BufferSize;
 
-            for (uint32_t txServer = 0; txServer<fan; txServer++){
+// /*
+// 		 for (uint32_t port = 0; port<queues.GetN(); port++){
+// 		 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc>(queues.Get(port));
+// 		 	double remaining = genDisc->GetRemainingBuffer();
+// 		 	for (uint32_t priority = 0; priority<nPrior; priority++)  {
+// 		 		uint32_t qSize = genDisc->GetQueueDiscClass(priority)->GetQueueDisc()->GetNBytes();
+// 		 		auto [th, sentBytes] = genDisc->GetThroughputQueue(priority, nanodelay);  // only with c++17
+// 		 		uint64_t droppedBytes = genDisc->GetDroppedBytes(priority);
+// 		 		uint64_t maxSize = genDisc->GetAlpha(priority)*remaining;
+// 		 		*stream->GetStream() << " " << qSize << " " << th << " " << sentBytes << " " << droppedBytes << " " << maxSize;
+// 		 	}
+// 		 }
+// */
+// 		*stream->GetStream() << std::endl;
+// 	}
 
-            	uint16_t port = PORT_START[ incastLeaf*SERVER_COUNT+ incastServer]++;
-	            if (port>PORT_END){
-	                port=4444;
-	                PORT_START[incastLeaf*SERVER_COUNT+ incastServer]=4444;
-	            }
-            	Time startApp = (NanoSeconds (150)+MilliSeconds(rand_range(50,1000)));
-            	Ptr<Node> rxNode = servers[incastLeaf].Get (incastServer);
-            	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
-            	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
-	            Ipv4Address rxAddress = rxInterface.GetLocal ();
-
-	            InetSocketAddress ad (rxAddress, port);
-	            Address sinkAddress(ad);
-	            Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
-	            bulksend->SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
-	            bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
-	            bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
-	            bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
-	            bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
-	            bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
-	            bulksend->SetAttribute("InitialCwnd", UintegerValue (flowSize/PACKET_SIZE+1));
-				bulksend->SetAttribute("priority",UintegerValue(prior));
-	            bulksend->SetAttribute("sendAt", TimeValue(Seconds (startTime)));
-	            bulksend->SetStartTime (startApp);
-	            bulksend->SetStopTime (Seconds (END_TIME));
-	            servers[txLeaf].Get (txServer)->AddApplication(bulksend);
-
-	            PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
-                ApplicationContainer sinkApp = sink.Install (servers[incastLeaf].Get(incastServer));
-                sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
-                sinkApp.Get(0)->SetAttribute("recvAt",TimeValue(Seconds(startTime)));
-                sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0)); // ack packets are prioritized
-                sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0)); // ack packets are prioritized
-                sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(prior));
-                sinkApp.Get(0)->SetAttribute("flowId",UintegerValue(flowCount));
-                flowCount+=1;
-                sinkApp.Start (startApp);
-                sinkApp.Stop (Seconds (END_TIME));
-                sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
-            }
-            startTime += poission_gen_interval (requestRate);
-        }
-    }
-}
-
-void install_applications (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
-        long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
-{
-    uint64_t flowSize;
-
-    uint32_t prior = rand_range(1,numPrior-1);
-
-    for (int txServer = 0; txServer < SERVER_COUNT; txServer++)
-    {
-    	double startTime = START_TIME + poission_gen_interval (requestRate);
-        while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
-        {
-        	// Permutation demand matrix
-        	int rxLeaf=txLeaf+1;
-            if (rxLeaf==LEAF_COUNT){
-            	rxLeaf = 0;
-            }
-            // int rxLeaf=txLeaf;
-            // while (txLeaf==rxLeaf){
-            //     rxLeaf = get_target_leaf(LEAF_COUNT);
-            // }
-
-            uint32_t rxServer = rand_range(0,SERVER_COUNT);
-
-        	uint16_t port = PORT_START[rxLeaf*SERVER_COUNT + rxServer]++;
-            if (port>PORT_END){
-                port=4444;
-                PORT_START[rxLeaf*SERVER_COUNT + rxServer]=4444;
-            }
-
-            uint64_t flowSize = gen_random_cdf (cdfTable);
-            while(flowSize==0){
-                flowSize=gen_random_cdf (cdfTable);
-            }
-
-        	Ptr<Node> rxNode = servers[rxLeaf].Get (rxServer);
-        	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
-        	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
-            Ipv4Address rxAddress = rxInterface.GetLocal ();
-
-            InetSocketAddress ad (rxAddress, port);
-            Address sinkAddress(ad);
-            Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
-            bulksend->SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
-            bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
-            bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
-            bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
-            bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
-            bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
-            bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
-			bulksend->SetAttribute("priority",UintegerValue(prior));
-            bulksend->SetStartTime (Seconds(startTime));
-            bulksend->SetStopTime (Seconds (END_TIME));
-            servers[txLeaf].Get (txServer)->AddApplication(bulksend);
-
-            PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
-            ApplicationContainer sinkApp = sink.Install (servers[rxLeaf].Get(rxServer));
-            sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
-            sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0)); // ack packets are prioritized
-            sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0)); // ack packets are prioritized
-            sinkApp.Get(0)->SetAttribute("flowId",UintegerValue(flowCount));
-            sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(prior));
-            flowCount+=1;
-            sinkApp.Start (Seconds(startTime));
-            sinkApp.Stop (Seconds (END_TIME));
-            sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
-            startTime += poission_gen_interval (requestRate);
-        }
-    }
-    // std::cout << "Finished installation of applications from leaf-"<< fromLeafId << std::endl;
-}
+// 	Simulator::Schedule(NanoSeconds(nanodelay), InvokeToRStats, stream, BufferSize, LEAF_COUNT, nanodelay);
+// }
 
 
+// int tar=0;
+// int get_target_leaf(int leafCount){
+// tar+=1;
+//     if(tar==leafCount){
+//         tar=0;
+//         return tar;
+//     }
+//     return tar;
+// }
 
-void install_applications_simple_noincast_bursty (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
-        long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
-{
-    std::cout << "install applications simple-noincast-bursty" << std::endl;
-    std::cout << "requestRate=" << requestRate << std::endl;
+// void install_applications_incast (int incastLeaf, NodeContainer* servers, double requestRate,uint32_t requestSize, struct cdf_table *cdfTable,
+//         long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
+// {
+// 	int fan = SERVER_COUNT;
+//     uint64_t flowSize = double(requestSize) / double(fan);
 
-    uint64_t flowSize;
+//     uint32_t prior = rand_range(1,numPrior-1);
 
-    uint32_t prior = rand_range(1,numPrior-1);
+//     for (int incastServer = 0; incastServer < SERVER_COUNT; incastServer++)
+//     {
+//     	double startTime = START_TIME + poission_gen_interval (requestRate);
+//         while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
+//         {
+//             // Permutation demand matrix
+//         	int txLeaf=incastLeaf+1;
+//             if (txLeaf==LEAF_COUNT){
+//             	txLeaf = 0;
+//             }
+//             // int txLeaf=incastLeaf;
+//             // while (txLeaf==incastLeaf){
+//             //     txLeaf = get_target_leaf(LEAF_COUNT);
+//             // }
 
-    for (int txServer = 0; txServer < 2; txServer++)
-    {
-        std::cout << "txLeaf=" << txLeaf << ", txServer=" << txServer << std::endl;
-    	double startTime = START_TIME + poission_gen_interval (requestRate);
-        while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
-        {
-		std::cout << "startTime=" << startTime << std::endl;
-        	// Permutation demand matrix
-        	int rxLeaf=txLeaf+1;
-            if (rxLeaf==LEAF_COUNT){
-            	rxLeaf = 0;
-            }
-            // int rxLeaf=txLeaf;
-            // while (txLeaf==rxLeaf){
-            //     rxLeaf = get_target_leaf(LEAF_COUNT);
-            // }
+//             for (uint32_t txServer = 0; txServer<fan; txServer++){
 
-            //uint32_t rxServer = rand_range(0,SERVER_COUNT);
-            uint32_t rxServer = 0;
-            std::cout << "rxLeaf=" << rxLeaf << ", rxServer=" << rxServer << std::endl;
+//             	uint16_t port = PORT_START[ incastLeaf*SERVER_COUNT+ incastServer]++;
+// 	            if (port>PORT_END){
+// 	                port=4444;
+// 	                PORT_START[incastLeaf*SERVER_COUNT+ incastServer]=4444;
+// 	            }
+//             	Time startApp = (NanoSeconds (150)+MilliSeconds(rand_range(50,1000)));
+//             	Ptr<Node> rxNode = servers[incastLeaf].Get (incastServer);
+//             	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
+//             	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
+// 	            Ipv4Address rxAddress = rxInterface.GetLocal ();
 
-        	uint16_t port = PORT_START[rxLeaf*SERVER_COUNT + rxServer]++;
-            if (port>PORT_END){
-                port=4444;
-                PORT_START[rxLeaf*SERVER_COUNT + rxServer]=4444;
-            }
-            //std::cout << "port=" << port << std::endl;
+// 	            InetSocketAddress ad (rxAddress, port);
+// 	            Address sinkAddress(ad);
+// 	            Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+// 	            bulksend->SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
+// 	            bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+// 	            bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+// 	            bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
+// 	            bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
+// 	            bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
+// 	            bulksend->SetAttribute("InitialCwnd", UintegerValue (flowSize/PACKET_SIZE+1));
+// 				bulksend->SetAttribute("priority",UintegerValue(prior));
+// 	            bulksend->SetAttribute("sendAt", TimeValue(Seconds (startTime)));
+// 	            bulksend->SetStartTime (startApp);
+// 	            bulksend->SetStopTime (Seconds (END_TIME));
+// 	            servers[txLeaf].Get (txServer)->AddApplication(bulksend);
 
-            uint64_t flowSize = gen_random_cdf (cdfTable);
-            while(flowSize==0){
-                flowSize=gen_random_cdf (cdfTable);
-            }
+// 	            PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
+//                 ApplicationContainer sinkApp = sink.Install (servers[incastLeaf].Get(incastServer));
+//                 sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+//                 sinkApp.Get(0)->SetAttribute("recvAt",TimeValue(Seconds(startTime)));
+//                 sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0)); // ack packets are prioritized
+//                 sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0)); // ack packets are prioritized
+//                 sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(prior));
+//                 sinkApp.Get(0)->SetAttribute("flowId",UintegerValue(flowCount));
+//                 flowCount+=1;
+//                 sinkApp.Start (startApp);
+//                 sinkApp.Stop (Seconds (END_TIME));
+//                 sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+//             }
+//             startTime += poission_gen_interval (requestRate);
+//         }
+//     }
+// }
 
-        	Ptr<Node> rxNode = servers[rxLeaf].Get (rxServer);
-        	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
-        	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
-            Ipv4Address rxAddress = rxInterface.GetLocal ();
+// void install_applications (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
+//         long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
+// {
+//     uint64_t flowSize;
 
-            InetSocketAddress ad (rxAddress, port);
-            Address sinkAddress(ad);
-            Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
-            bulksend->SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
-            bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
-            bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
-            bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
-            bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
-            bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
-            bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
-			bulksend->SetAttribute("priority",UintegerValue(prior));
-            bulksend->SetStartTime (Seconds(startTime));
-            bulksend->SetStopTime (Seconds (END_TIME));
-            servers[txLeaf].Get (txServer)->AddApplication(bulksend);
+//     uint32_t prior = rand_range(1,numPrior-1);
 
-            PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
-            ApplicationContainer sinkApp = sink.Install (servers[rxLeaf].Get(rxServer));
-            sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
-            sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0)); // ack packets are prioritized
-            sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0)); // ack packets are prioritized
-            sinkApp.Get(0)->SetAttribute("flowId",UintegerValue(flowCount));
-            sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(prior));
-            flowCount+=1;
-            sinkApp.Start (Seconds(startTime));
-            sinkApp.Stop (Seconds (END_TIME));
-            sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
-            startTime += poission_gen_interval (requestRate);
-        }
-    }
-    // std::cout << "Finished installation of applications from leaf-"<< fromLeafId << std::endl;
-}
+//     for (int txServer = 0; txServer < SERVER_COUNT; txServer++)
+//     {
+//     	double startTime = START_TIME + poission_gen_interval (requestRate);
+//         while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
+//         {
+//         	// Permutation demand matrix
+//         	int rxLeaf=txLeaf+1;
+//             if (rxLeaf==LEAF_COUNT){
+//             	rxLeaf = 0;
+//             }
+//             // int rxLeaf=txLeaf;
+//             // while (txLeaf==rxLeaf){
+//             //     rxLeaf = get_target_leaf(LEAF_COUNT);
+//             // }
+
+//             uint32_t rxServer = rand_range(0,SERVER_COUNT);
+
+//         	uint16_t port = PORT_START[rxLeaf*SERVER_COUNT + rxServer]++;
+//             if (port>PORT_END){
+//                 port=4444;
+//                 PORT_START[rxLeaf*SERVER_COUNT + rxServer]=4444;
+//             }
+
+//             uint64_t flowSize = gen_random_cdf (cdfTable);
+//             while(flowSize==0){
+//                 flowSize=gen_random_cdf (cdfTable);
+//             }
+
+//         	Ptr<Node> rxNode = servers[rxLeaf].Get (rxServer);
+//         	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
+//         	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
+//             Ipv4Address rxAddress = rxInterface.GetLocal ();
+
+//             InetSocketAddress ad (rxAddress, port);
+//             Address sinkAddress(ad);
+//             Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+//             bulksend->SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
+//             bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+//             bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+//             bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
+//             bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
+//             bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
+//             bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+// 			bulksend->SetAttribute("priority",UintegerValue(prior));
+//             bulksend->SetStartTime (Seconds(startTime));
+//             bulksend->SetStopTime (Seconds (END_TIME));
+//             servers[txLeaf].Get (txServer)->AddApplication(bulksend);
+
+//             PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
+//             ApplicationContainer sinkApp = sink.Install (servers[rxLeaf].Get(rxServer));
+//             sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+//             sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0)); // ack packets are prioritized
+//             sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0)); // ack packets are prioritized
+//             sinkApp.Get(0)->SetAttribute("flowId",UintegerValue(flowCount));
+//             sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(prior));
+//             flowCount+=1;
+//             sinkApp.Start (Seconds(startTime));
+//             sinkApp.Stop (Seconds (END_TIME));
+//             sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+//             startTime += poission_gen_interval (requestRate);
+//         }
+//     }
+//     // std::cout << "Finished installation of applications from leaf-"<< fromLeafId << std::endl;
+// }
 
 
 
-void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
-        long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
-{
-    std::cout << "install applications simple-noincast-continuous" << std::endl;
+// void install_applications_simple_noincast_bursty (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
+//         long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
+// {
+//     std::cout << "install applications simple-noincast-bursty" << std::endl;
+//     std::cout << "requestRate=" << requestRate << std::endl;
 
-    uint64_t flowSize = 1e9;
+//     uint64_t flowSize;
 
-    uint32_t prior = rand_range(1,numPrior-1);
+//     uint32_t prior = rand_range(1,numPrior-1);
 
-    for (int txServer = 0; txServer < 2; txServer++)
-    {
-        std::cout << "txLeaf=" << txLeaf << ", txServer=" << txServer << std::endl;
-    	double startTime = START_TIME + poission_gen_interval (requestRate);
-        // while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
-        // {
-        	// Permutation demand matrix
-        	int rxLeaf=txLeaf+1;
-            if (rxLeaf==LEAF_COUNT){
-            	rxLeaf = 0;
-            }
-            // int rxLeaf=txLeaf;
-            // while (txLeaf==rxLeaf){
-            //     rxLeaf = get_target_leaf(LEAF_COUNT);
-            // }
+//     for (int txServer = 0; txServer < 2; txServer++)
+//     {
+//         std::cout << "txLeaf=" << txLeaf << ", txServer=" << txServer << std::endl;
+//     	double startTime = START_TIME + poission_gen_interval (requestRate);
+//         while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
+//         {
+// 		std::cout << "startTime=" << startTime << std::endl;
+//         	// Permutation demand matrix
+//         	int rxLeaf=txLeaf+1;
+//             if (rxLeaf==LEAF_COUNT){
+//             	rxLeaf = 0;
+//             }
+//             // int rxLeaf=txLeaf;
+//             // while (txLeaf==rxLeaf){
+//             //     rxLeaf = get_target_leaf(LEAF_COUNT);
+//             // }
 
-            //uint32_t rxServer = rand_range(0,SERVER_COUNT);
-            uint32_t rxServer = 0;
-            std::cout << "rxLeaf=" << rxLeaf << ", rxServer=" << rxServer << std::endl;
+//             //uint32_t rxServer = rand_range(0,SERVER_COUNT);
+//             uint32_t rxServer = 0;
+//             std::cout << "rxLeaf=" << rxLeaf << ", rxServer=" << rxServer << std::endl;
 
-        	uint16_t port = PORT_START[rxLeaf*SERVER_COUNT + rxServer]++;
-            if (port>PORT_END){
-                port=4444;
-                PORT_START[rxLeaf*SERVER_COUNT + rxServer]=4444;
-            }
-            //std::cout << "port=" << port << std::endl;
+//         	uint16_t port = PORT_START[rxLeaf*SERVER_COUNT + rxServer]++;
+//             if (port>PORT_END){
+//                 port=4444;
+//                 PORT_START[rxLeaf*SERVER_COUNT + rxServer]=4444;
+//             }
+//             //std::cout << "port=" << port << std::endl;
 
-            // uint64_t flowSize = gen_random_cdf (cdfTable);
-            // while(flowSize==0){
-            //     flowSize=gen_random_cdf (cdfTable);
-            // }
+//             uint64_t flowSize = gen_random_cdf (cdfTable);
+//             while(flowSize==0){
+//                 flowSize=gen_random_cdf (cdfTable);
+//             }
 
-        	Ptr<Node> rxNode = servers[rxLeaf].Get (rxServer);
-        	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
-        	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
-            Ipv4Address rxAddress = rxInterface.GetLocal ();
+//         	Ptr<Node> rxNode = servers[rxLeaf].Get (rxServer);
+//         	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
+//         	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
+//             Ipv4Address rxAddress = rxInterface.GetLocal ();
 
-            InetSocketAddress ad (rxAddress, port);
-            Address sinkAddress(ad);
-            Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
-            bulksend->SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
-            bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
-            bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
-            bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
-            bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
-            bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
-            bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
-			bulksend->SetAttribute("priority",UintegerValue(prior));
-            bulksend->SetStartTime (Seconds(startTime));
-            bulksend->SetStopTime (Seconds (END_TIME));
-            servers[txLeaf].Get (txServer)->AddApplication(bulksend);
+//             InetSocketAddress ad (rxAddress, port);
+//             Address sinkAddress(ad);
+//             Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+//             bulksend->SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
+//             bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+//             bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+//             bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
+//             bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
+//             bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
+//             bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+// 			bulksend->SetAttribute("priority",UintegerValue(prior));
+//             bulksend->SetStartTime (Seconds(startTime));
+//             bulksend->SetStopTime (Seconds (END_TIME));
+//             servers[txLeaf].Get (txServer)->AddApplication(bulksend);
 
-            PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
-            ApplicationContainer sinkApp = sink.Install (servers[rxLeaf].Get(rxServer));
-            sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
-            sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0)); // ack packets are prioritized
-            sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0)); // ack packets are prioritized
-            sinkApp.Get(0)->SetAttribute("flowId",UintegerValue(flowCount));
-            sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(prior));
-            flowCount+=1;
-            sinkApp.Start (Seconds(startTime));
-            sinkApp.Stop (Seconds (END_TIME));
-            sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
-            // startTime += poission_gen_interval (requestRate);
-        // }
-    }
-    // std::cout << "Finished installation of applications from leaf-"<< fromLeafId << std::endl;
-}
+//             PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
+//             ApplicationContainer sinkApp = sink.Install (servers[rxLeaf].Get(rxServer));
+//             sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+//             sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0)); // ack packets are prioritized
+//             sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0)); // ack packets are prioritized
+//             sinkApp.Get(0)->SetAttribute("flowId",UintegerValue(flowCount));
+//             sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(prior));
+//             flowCount+=1;
+//             sinkApp.Start (Seconds(startTime));
+//             sinkApp.Stop (Seconds (END_TIME));
+//             sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+//             startTime += poission_gen_interval (requestRate);
+//         }
+//     }
+//     // std::cout << "Finished installation of applications from leaf-"<< fromLeafId << std::endl;
+// }
+
+
+
+// void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer* servers, double requestRate, struct cdf_table *cdfTable,
+//         long &flowCount, int SERVER_COUNT, int LEAF_COUNT, double START_TIME, double END_TIME, double FLOW_LAUNCH_END_TIME, int numPrior)
+// {
+//     std::cout << "install applications simple-noincast-continuous" << std::endl;
+
+//     uint64_t flowSize = 1e9;
+
+//     uint32_t prior = rand_range(1,numPrior-1);
+
+//     for (int txServer = 0; txServer < 2; txServer++)
+//     {
+//         std::cout << "txLeaf=" << txLeaf << ", txServer=" << txServer << std::endl;
+//     	double startTime = START_TIME + poission_gen_interval (requestRate);
+//         // while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME)
+//         // {
+//         	// Permutation demand matrix
+//         	int rxLeaf=txLeaf+1;
+//             if (rxLeaf==LEAF_COUNT){
+//             	rxLeaf = 0;
+//             }
+//             // int rxLeaf=txLeaf;
+//             // while (txLeaf==rxLeaf){
+//             //     rxLeaf = get_target_leaf(LEAF_COUNT);
+//             // }
+
+//             //uint32_t rxServer = rand_range(0,SERVER_COUNT);
+//             uint32_t rxServer = 0;
+//             std::cout << "rxLeaf=" << rxLeaf << ", rxServer=" << rxServer << std::endl;
+
+//         	uint16_t port = PORT_START[rxLeaf*SERVER_COUNT + rxServer]++;
+//             if (port>PORT_END){
+//                 port=4444;
+//                 PORT_START[rxLeaf*SERVER_COUNT + rxServer]=4444;
+//             }
+//             //std::cout << "port=" << port << std::endl;
+
+//             // uint64_t flowSize = gen_random_cdf (cdfTable);
+//             // while(flowSize==0){
+//             //     flowSize=gen_random_cdf (cdfTable);
+//             // }
+
+//         	Ptr<Node> rxNode = servers[rxLeaf].Get (rxServer);
+//         	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
+//         	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
+//             Ipv4Address rxAddress = rxInterface.GetLocal ();
+
+//             InetSocketAddress ad (rxAddress, port);
+//             Address sinkAddress(ad);
+//             Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+//             bulksend->SetAttribute("Protocol", TypeIdValue(TcpSocketFactory::GetTypeId()));
+//             bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+//             bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+//             bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
+//             bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
+//             bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
+//             bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+// 			bulksend->SetAttribute("priority",UintegerValue(prior));
+//             bulksend->SetStartTime (Seconds(startTime));
+//             bulksend->SetStopTime (Seconds (END_TIME));
+//             servers[txLeaf].Get (txServer)->AddApplication(bulksend);
+
+//             PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), port));
+//             ApplicationContainer sinkApp = sink.Install (servers[rxLeaf].Get(rxServer));
+//             sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+//             sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0)); // ack packets are prioritized
+//             sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0)); // ack packets are prioritized
+//             sinkApp.Get(0)->SetAttribute("flowId",UintegerValue(flowCount));
+//             sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(prior));
+//             flowCount+=1;
+//             sinkApp.Start (Seconds(startTime));
+//             sinkApp.Stop (Seconds (END_TIME));
+//             sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+//             // startTime += poission_gen_interval (requestRate);
+//         // }
+//     }
+//     // std::cout << "Finished installation of applications from leaf-"<< fromLeafId << std::endl;
+// }
 
 
 
@@ -569,36 +622,49 @@ main (int argc, char *argv[])
 
 	*torStats->GetStream ()
 	<< "time "
-	<< "tor "
+	// << "tor "
 	<< "bufferSizeMB "
 	<< "occupiedBufferPct";
 
-	/* Links from leaf to servers, lower port IDs. */
-	int csv_header_pcount = 0;
-	for(int i=0; i<SERVER_COUNT; i+=1) {
-		for(int j=0; j<nPrior; j+=1) {
-			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_qSize";
-			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_threshold";
-			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_sentBytes";
-			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_droppedBytes";
-			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_maxSize";
+	// AnnC: [artemis-star-topoloy] numSinks hard-coded for now
+	int numSinks = 1;
+	for (int i=0; i<numSinks; i++) {
+		for (int j=0; j<nPrior; j++) {
+			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_qSize";
+			// AnnC: [artemis-star-topology] how is this threshold not throughput?
+			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_threshold";
+			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_sentBytes";
+			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_droppedBytes";
+			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_maxSize";
 		}
-		csv_header_pcount++;
 	}
 
-	/* Links from leaf to spine, higher port IDs. */
-	for(int i=0; i<SPINE_COUNT; i+=1) {
-		for(int j=0; j<LINK_COUNT; j+=1) {
-			for(int k=0; k<nPrior; k+=1) {
-				*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_qSize";
-				*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_threshold";
-				*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_sentBytes";
-				*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_droppedBytes";
-				*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_maxSize";
-			}
-			csv_header_pcount++;
-		}
-	}
+	/* Links from leaf to servers, lower port IDs. */
+	// int csv_header_pcount = 0;
+	// for(int i=0; i<SERVER_COUNT; i+=1) {
+	// 	for(int j=0; j<nPrior; j+=1) {
+	// 		*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_qSize";
+	// 		*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_threshold";
+	// 		*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_sentBytes";
+	// 		*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_droppedBytes";
+	// 		*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << j <<"_maxSize";
+	// 	}
+	// 	csv_header_pcount++;
+	// }
+
+	// /* Links from leaf to spine, higher port IDs. */
+	// for(int i=0; i<SPINE_COUNT; i+=1) {
+	// 	for(int j=0; j<LINK_COUNT; j+=1) {
+	// 		for(int k=0; k<nPrior; k+=1) {
+	// 			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_qSize";
+	// 			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_threshold";
+	// 			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_sentBytes";
+	// 			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_droppedBytes";
+	// 			*torStats->GetStream () << " port_" << csv_header_pcount << "_q_" << k <<"_maxSize";
+	// 		}
+	// 		csv_header_pcount++;
+	// 	}
+	// }
 	
 	*torStats->GetStream () << std::endl;
 	// << "q1_1,th1_1,q1_2,th1_2," // q1_3 th1_3 q1_4 th1_4 q1_5 th1_5 q1_6 th1_6 q1_7 th1_7 q1_8 th1_8 "
@@ -611,7 +677,9 @@ main (int argc, char *argv[])
 	// << "q8_1,th8_1,q8_2,th8_2" // q8_3 th8_3 q8_4 th8_4 q8_5 th8_5 q8_6 th8_6 q8_7 th8_7 q8_8 th8_8 "
 	// << std::endl;
 
-	uint32_t staticBuffer = (double) BufferSize*statBuf/(SERVER_COUNT+SPINE_COUNT*LINK_COUNT);
+	// AnnC: [artemis-star-topology] double check the buffer calculation here
+	// uint32_t staticBuffer = (double) BufferSize*statBuf/(SERVER_COUNT+SPINE_COUNT*LINK_COUNT);
+	uint32_t staticBuffer = (double) BufferSize*statBuf/numSinks;
 	BufferSize = BufferSize - staticBuffer; // BufferSize is the buffer pool which is available for sharing
 	if(UseEcn){
 		ecnEnabled = "EcnEnabled";
@@ -642,10 +710,11 @@ main (int argc, char *argv[])
     uint64_t LEAF_SERVER_CAPACITY = leafServerCapacity * GIGA;
     Time LINK_LATENCY = MicroSeconds(linkLatency);
 
+	// AnnC: [artemis-star-topology] the calculation is wrong for sure; leave it as this for now; will come back and change later
 	double RTTBytes = (LEAF_SERVER_CAPACITY*1e-6)*linkLatency; // 8 links visited in roundtrip according to the topology, divided by 8 for bytes
 	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
-	baseRTTNano = linkLatency*8*1e3;
-	nicBw = leafServerCapacity;
+	double baseRTTNano = linkLatency*8*1e3;
+	double nicBw = leafServerCapacity;
     // std::cout << "bandwidth " << spineLeafCapacity << "gbps" <<  " rtt " << linkLatency*8 << "us" << " BDP " << bdp/1e6 << std::endl;
 
     if (load < 0.0)
@@ -660,10 +729,6 @@ main (int argc, char *argv[])
     Config::SetDefault("ns3::SharedMemoryBuffer::BufferSize", UintegerValue(BufferSize));
     Config::SetDefault ("ns3::FifoQueueDisc::MaxSize", QueueSizeValue (QueueSize ("100MB")));
 
-    TrafficControlHelper tc;
-    uint16_t handle;
-    TrafficControlHelper::ClassIdList cid;
-
     /*General TCP Socket settings. Mostly used by various congestion control algorithms in common*/
 	Config::SetDefault ("ns3::TcpSocket::ConnTimeout", TimeValue (MilliSeconds (10))); // syn retry interval
     Config::SetDefault ("ns3::TcpSocketBase::MinRto", TimeValue (MicroSeconds (rto)) );  //(MilliSeconds (5))
@@ -674,10 +739,70 @@ main (int argc, char *argv[])
 	Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (1073725440));
     Config::SetDefault ("ns3::TcpSocket::ConnCount", UintegerValue (6));  // Syn retry count
     Config::SetDefault ("ns3::TcpSocketBase::Timestamp", BooleanValue (true));
+	// AnnC: [artemis-star-topology] PACKET_SIZE
     Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (PACKET_SIZE));
     Config::SetDefault ("ns3::TcpSocket::DelAckCount", UintegerValue (0));
     Config::SetDefault ("ns3::TcpSocket::PersistTimeout", TimeValue (Seconds (20)));
 
+	/****************************************************************/
+	/* Swap to a star topology                                      */
+	/* Reference: https://github.com/netsyn-princeton/cc-aqm-bm-ns3 */
+	/****************************************************************/
+
+	int numNodes = 10;
+	NodeContainer n0, n1, n2, n3, n4, n5, n6, n7, n8, n9, nd, ns; 
+	n0.Create (1);
+	n1.Create (1);
+	n2.Create (1);
+	n3.Create (1);
+	n4.Create (1);
+	n5.Create (1);
+	n6.Create (1);
+	n7.Create (1);
+	n8.Create (1);
+	n9.Create (1);
+	nd.Create (1);
+	ns.Create (1);
+
+
+	// AnnC: [artemis-star-topology] add in proper queue management; for now, assume droptail
+	std::string queueDiscType = "droptail";
+	bool dropTail = (queueDiscType == "droptail");
+	// AnnC: [artemis-star-topology] add in max queue size for droptail
+	uint32_t queueDiscSize = 10;
+
+	PointToPointHelper accessLink;
+	accessLink.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
+	accessLink.SetChannelAttribute ("Delay", StringValue ("0.1ms"));
+	if (dropTail) {
+		accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
+	}
+
+	PointToPointHelper bottleneckLink;
+	bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (LEAF_SERVER_CAPACITY)));
+	bottleneckLink.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
+	if (dropTail) {
+		bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
+	}
+
+
+	InternetStackHelper stack;
+	stack.InstallAll ();
+
+	// AnnC: [artemis-star-topology] maybe not necessary; only in ABM, not in Artemis'
+	Ipv4GlobalRoutingHelper globalRoutingHelper;
+	stack.SetRoutingHelper (globalRoutingHelper);
+
+
+	TrafficControlHelper tchPfifoFastAccess;
+	tchPfifoFastAccess.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("1000p"));
+
+	TrafficControlHelper tc;
+	// AnnC: [artemis-star-topology] declared above
+	// uint16_t handle;
+	// TrafficControlHelper tc;
+    uint16_t handle;
+    TrafficControlHelper::ClassIdList cid;
 
     /*CC Configuration*/
     std::cout << "TcpProt=" << TcpProt << std::endl;
@@ -812,6 +937,7 @@ main (int argc, char *argv[])
 			Config::SetDefault("ns3::TcpSocketState::useThetaPower", BooleanValue(true)); // This parameter is critical. Pay attention. Both HPCC and PowerTCP are implemented in the same file tcp-wien.
 			Config::SetDefault("ns3::TcpSocketState::multipleRateHpcc", BooleanValue(false));
 			Config::SetDefault("ns3::TcpSocketState::targetUtil", DoubleValue(0.95));
+			// AnnC: [artemis-star-topology] this part may become a problem when I shift to the star topology
 			Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
 			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
 			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
@@ -849,96 +975,45 @@ main (int argc, char *argv[])
 			return 0;
     }
 
-	/****************************************************************/
-	/* Swap to a star topology                                      */
-	/* Reference: https://github.com/netsyn-princeton/cc-aqm-bm-ns3 */
-	/****************************************************************/
-
-	int numNodes = 10;
-	NodeContainer n0, n1, n2, n3, n4, n5, n6, n7, n8, n9, nd, ns; 
-	n0.Create (1);
-	n1.Create (1);
-	n2.Create (1);
-	n3.Create (1);
-	n4.Create (1);
-	n5.Create (1);
-	n6.Create (1);
-	n7.Create (1);
-	n8.Create (1);
-	n9.Create (1);
-	nd.Create (1);
-	ns.Create (1);
-
-
-	// AnnC: [artemis-star-topology] add in proper queue management; for now, assume droptail
-	std::string queueDiscType = "droptail";
-	bool dropTail = (queueDiscType == "droptail");
-	// AnnC: [artemis-star-topology] add in max queue size for droptail
-	uint32_t queueDiscSize = 10;
-
-	PointToPointHelper accessLink;
-	accessLink.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
-	accessLink.SetChannelAttribute ("Delay", StringValue ("0.1ms"));
-	if (dropTail) {
-		accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
-	}
-
-	PointToPointHelper bottleneckLink;
-	bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (LEAF_SERVER_CAPACITY)));
-	bottleneckLink.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
-	if (dropTail) {
-		bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
-	}
-
-
-	InternetStackHelper stack;
-	stack.InstallAll ();
-
-
-	TrafficControlHelper tchPfifoFastAccess;
-	tchPfifoFastAccess.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("1000p"));
-
-	TrafficControlHelper tchBottleneck;
-	// AnnC: [artemis-star-topology] declared above
-	// uint16_t handle;
-    if (queueDiscType.compare ("PfifoFast") == 0)
-    {
-		handle = tchBottleneck.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize",
-                                      QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
-    }
-    else if (queueDiscType.compare ("ARED") == 0)
-    {
-		handle = tchBottleneck.SetRootQueueDisc ("ns3::RedQueueDisc");
-		Config::SetDefault ("ns3::RedQueueDisc::ARED", BooleanValue (true));
-		Config::SetDefault ("ns3::RedQueueDisc::MaxSize",
-                          QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
-    }
-    else if (queueDiscType.compare ("CoDel") == 0)
-    {
-		handle = tchBottleneck.SetRootQueueDisc ("ns3::CoDelQueueDisc");
-		Config::SetDefault ("ns3::CoDelQueueDisc::MaxSize",
-                          QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
-    }
-    else if (queueDiscType.compare ("FqCoDel") == 0)
-    {
-		handle = tchBottleneck.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
-		Config::SetDefault ("ns3::FqCoDelQueueDisc::MaxSize",
-                          QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
-    }
-    else if (queueDiscType.compare ("PIE") == 0)
-    {
-		handle = tchBottleneck.SetRootQueueDisc ("ns3::PieQueueDisc");
-		Config::SetDefault ("ns3::PieQueueDisc::MaxSize",
-                          QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
-    }
-    else if (queueDiscType.compare ("prio") == 0)
-    {
-		handle = tchBottleneck.SetRootQueueDisc ("ns3::PrioQueueDisc", "Priomap",
-                                                        StringValue ("0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"));
-		TrafficControlHelper::ClassIdList cid = tchBottleneck.AddQueueDiscClasses (handle, 2, "ns3::QueueDiscClass");
-		tchBottleneck.AddChildQueueDisc (handle, cid[0], "ns3::FifoQueueDisc");
-		tchBottleneck.AddChildQueueDisc (handle, cid[1], "ns3::RedQueueDisc");
-    }
+	// AnnC: [artemis-star-topology] add in this part later; the CC part above has already SetRootQueueDisc to GenQueueDisc
+    // if (queueDiscType.compare ("PfifoFast") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize",
+    //                                   QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("ARED") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::RedQueueDisc");
+	// 	Config::SetDefault ("ns3::RedQueueDisc::ARED", BooleanValue (true));
+	// 	Config::SetDefault ("ns3::RedQueueDisc::MaxSize",
+    //                       QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("CoDel") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::CoDelQueueDisc");
+	// 	Config::SetDefault ("ns3::CoDelQueueDisc::MaxSize",
+    //                       QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("FqCoDel") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
+	// 	Config::SetDefault ("ns3::FqCoDelQueueDisc::MaxSize",
+    //                       QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("PIE") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::PieQueueDisc");
+	// 	Config::SetDefault ("ns3::PieQueueDisc::MaxSize",
+    //                       QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("prio") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::PrioQueueDisc", "Priomap",
+    //                                                     StringValue ("0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"));
+	// 	TrafficControlHelper::ClassIdList cid = tchBottleneck.AddQueueDiscClasses (handle, 2, "ns3::QueueDiscClass");
+	// 	tchBottleneck.AddChildQueueDisc (handle, cid[0], "ns3::FifoQueueDisc");
+	// 	tchBottleneck.AddChildQueueDisc (handle, cid[1], "ns3::RedQueueDisc");
+    // }
 	
 	
 	NetDeviceContainer devicesn0nd = accessLink.Install (n0.Get (0), nd.Get (0));
@@ -963,9 +1038,82 @@ main (int argc, char *argv[])
 	tchPfifoFastAccess.Install (devicesn9nd);
   
 	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), ns.Get (0));
+	// AnnC: [artemis-star-topology] check size here; maybe 1 or 2; could change how we install later
+	// std::cout << devicesBottleneckLink.GetN() << std::endl;
+
+
+	sharedMemory = CreateObject<SharedMemoryBuffer>();
+	sharedMemory->SetAttribute("BufferSize",UintegerValue(BufferSize));
+	sharedMemory->SetSharedBufferSize(BufferSize);
+
+
 	QueueDiscContainer qdiscs;
-	if (!dropTail) {
-		qdiscs = tchBottleneck.Install (devicesBottleneckLink);
+	// AnnC: [artemis-star-topology] why is it such that we do not need to install when dropTail?
+	//                               ohhh maybe if it's droptail, we dont need to install; its naturally droptail?
+	// if (!dropTail) {
+	// 	qdiscs = tc.Install (devicesBottleneckLink);
+	// }
+	qdiscs = tc.Install (devicesBottleneckLink);
+	bottleneckQueueDiscs.Add(qdiscs.Get(0));
+	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
+	genDisc->SetPortId(0);
+	switch(algorithm){
+		case DT:
+			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+			// AnnC: [artemis-star-topology] check whether it is right to set it to leafServerCapacity
+			genDisc->setPortBw(leafServerCapacity);
+			genDisc->SetSharedMemory(sharedMemory);
+			genDisc->SetBufferAlgorithm(DT);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case FAB:
+			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+			genDisc->setPortBw(leafServerCapacity);
+			genDisc->SetSharedMemory(sharedMemory);
+			genDisc->SetBufferAlgorithm(FAB);
+			genDisc->SetFabWindow(MicroSeconds(5000));
+			// AnnC: [artemis-star-topology] PACKET_SIZE should be replaced
+			genDisc->SetFabThreshold(15*PACKET_SIZE);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case CS:
+			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+			genDisc->setPortBw(leafServerCapacity);
+			genDisc->SetSharedMemory(sharedMemory);
+			genDisc->SetBufferAlgorithm(CS);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case IB:
+			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+			genDisc->setPortBw(leafServerCapacity);
+			genDisc->SetSharedMemory(sharedMemory);
+			genDisc->SetBufferAlgorithm(IB);
+			genDisc->SetAfdWindow(MicroSeconds(50));
+			genDisc->SetDppWindow(MicroSeconds(5000));
+			genDisc->SetDppThreshold(RTTPackets);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+				genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
+			}
+			break;
+		case ABM:
+			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+			genDisc->setPortBw(leafServerCapacity);
+			genDisc->SetSharedMemory(sharedMemory);
+			genDisc->SetBufferAlgorithm(ABM);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		default:
+			std::cout << "Error in buffer management configuration. Exiting!";
+			return 0;
 	}
 
   
@@ -1015,14 +1163,16 @@ main (int argc, char *argv[])
 	// AnnC: [artemis-star-topology] pass in flowsPacketsSize as a parameter
 	uint32_t flowsPacketsSize = 1000;
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
-	Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (flowsPacketsSize));
+	// AnnC: [artemis-star-topology] look duplicated from above
+	// Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (flowsPacketsSize));
 	// Set TCP Protocol for all instantiated TCP Sockets
 	// AnnC: [artemis-star-topology] should swap to TCP type defined in macro (or maybe not?)
 	// AnnC: [artemis-star-topology] double check: SocketType may have been defined before
-	std::string tcpProtocol = "TcpNewReno";
-	if (tcpProtocol != "TcpBasic") { 
-		Config::Set ("/NodeList/*/$ns3::TcpL4Protocol/SocketType", TypeIdValue (TypeId::LookupByName ("ns3::" + tcpProtocol)));
-	}
+	// AnnC: [artemis-star-topology] is this part necessary at all?
+	// std::string tcpProtocol = "TcpNewReno";
+	// if (tcpProtocol != "TcpBasic") { 
+	// 	Config::Set ("/NodeList/*/$ns3::TcpL4Protocol/SocketType", TypeIdValue (TypeId::LookupByName ("ns3::" + tcpProtocol)));
+	// }
 
 
 	// Install applications
@@ -1047,6 +1197,7 @@ main (int argc, char *argv[])
   	NodeContainer nodecontainers[numNodes] = {n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
   	uint64_t allflows = 0;
   	srand(randomSeed);
+	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
   	for (int i = 0; i < numNodes; i++) {
 		//uint64_t flowSize = 1000000000000;
 		uint64_t flowSize = gen_random_cdf(cdfTable);
@@ -1054,6 +1205,7 @@ main (int argc, char *argv[])
 		allflows += flowSize;
 		bulkSendHelperUp.SetAttribute ("MaxBytes", UintegerValue (flowSize));
 		sourceApps.Add (bulkSendHelperUp.Install (nodecontainers[i]));
+		// AnnC: [artemis-star-topology] in ABM, the request rate (0.2 here) is calculated instead
 		double startTime = poission_gen_interval(0.2);
 		std::cout << startTime << std::endl;
 		sourceApps.Get(i)->SetStartTime (Seconds (startTime));
@@ -1067,271 +1219,274 @@ main (int argc, char *argv[])
 
 
 
-    NodeContainer spines;
-	spines.Create (SPINE_COUNT);
-	NodeContainer leaves;
-	leaves.Create (LEAF_COUNT);
-	NodeContainer servers[LEAF_COUNT];
-	Ipv4InterfaceContainer serverIpv4[LEAF_COUNT];
+    // NodeContainer spines;
+	// spines.Create (SPINE_COUNT);
+	// NodeContainer leaves;
+	// leaves.Create (LEAF_COUNT);
+	// NodeContainer servers[LEAF_COUNT];
+	// Ipv4InterfaceContainer serverIpv4[LEAF_COUNT];
 
 	// std::string TcpMixNames[3] = {"ns3::TcpCubic", "ns3::TcpDctcp", "ns3::TcpWien"};
 	// uint32_t mixRatio[2]={cubicMix,dctcpMix};
-	for (uint32_t i = 0; i< LEAF_COUNT; i++){
-		servers[i].Create (SERVER_COUNT);
-		// if (multiQueueExp){
-		// 	for (uint32_t k = 0; k < 3; k++){
-		// 		for (uint32_t j = 0; j < SERVER_COUNT/3; j++){
-		// 			TypeId tid = TypeId::LookupByName (TcpMixNames[k]);
-		// 			std::stringstream nodeId;
-		// 			nodeId << servers[i].Get (j)->GetId ();
-		// 			std::string specificNode = "/NodeList/" + nodeId.str () + "/$ns3::TcpL4Protocol/SocketType";
-		// 			Config::Set (specificNode, TypeIdValue (tid));
-		// 		}
-		// 	}
-		// }
-	}
+	// for (uint32_t i = 0; i< LEAF_COUNT; i++){
+	// 	servers[i].Create (SERVER_COUNT);
+	// 	// if (multiQueueExp){
+	// 	// 	for (uint32_t k = 0; k < 3; k++){
+	// 	// 		for (uint32_t j = 0; j < SERVER_COUNT/3; j++){
+	// 	// 			TypeId tid = TypeId::LookupByName (TcpMixNames[k]);
+	// 	// 			std::stringstream nodeId;
+	// 	// 			nodeId << servers[i].Get (j)->GetId ();
+	// 	// 			std::string specificNode = "/NodeList/" + nodeId.str () + "/$ns3::TcpL4Protocol/SocketType";
+	// 	// 			Config::Set (specificNode, TypeIdValue (tid));
+	// 	// 		}
+	// 	// 	}
+	// 	// }
+	// }
 
-	InternetStackHelper internet;
-    Ipv4GlobalRoutingHelper globalRoutingHelper;
-	internet.SetRoutingHelper (globalRoutingHelper);
+	// InternetStackHelper internet;
+    // Ipv4GlobalRoutingHelper globalRoutingHelper;
+	// internet.SetRoutingHelper (globalRoutingHelper);
 
-	internet.Install(spines);
-	internet.Install(leaves);
-	for (uint32_t i = 0; i<LEAF_COUNT; i++){
-		internet.Install(servers[i]);
-	}
+	// internet.Install(spines);
+	// internet.Install(leaves);
+	// for (uint32_t i = 0; i<LEAF_COUNT; i++){
+	// 	internet.Install(servers[i]);
+	// }
 
-	PointToPointHelper p2p;
-    Ipv4AddressHelper ipv4;
-	Ipv4InterfaceContainer serverNics[LEAF_COUNT][SERVER_COUNT];
+	// PointToPointHelper p2p;
+    // Ipv4AddressHelper ipv4;
+	// Ipv4InterfaceContainer serverNics[LEAF_COUNT][SERVER_COUNT];
 
-    for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
-    	sharedMemoryLeaf[leaf]=CreateObject<SharedMemoryBuffer>();
-    	sharedMemoryLeaf[leaf]->SetAttribute("BufferSize",UintegerValue(BufferSize));
-    	sharedMemoryLeaf[leaf]->SetSharedBufferSize(BufferSize);
-    }
 
-    Ptr<SharedMemoryBuffer> sharedMemorySpine[SPINE_COUNT];
-    for (uint32_t spine = 0; spine<SPINE_COUNT; spine++){
-    	sharedMemorySpine[spine]=CreateObject<SharedMemoryBuffer>();
-    	sharedMemorySpine[spine]->SetAttribute("BufferSize",UintegerValue(BufferSize));
-    	sharedMemorySpine[spine]->SetSharedBufferSize(BufferSize);
-    }
 
-    uint32_t leafPortId[LEAF_COUNT]={0};
-    uint32_t spinePortId[SPINE_COUNT]={0};
+    // for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
+    // 	sharedMemoryLeaf[leaf]=CreateObject<SharedMemoryBuffer>();
+    // 	sharedMemoryLeaf[leaf]->SetAttribute("BufferSize",UintegerValue(BufferSize));
+    // 	sharedMemoryLeaf[leaf]->SetSharedBufferSize(BufferSize);
+    // }
+
+    // Ptr<SharedMemoryBuffer> sharedMemorySpine[SPINE_COUNT];
+    // for (uint32_t spine = 0; spine<SPINE_COUNT; spine++){
+    // 	sharedMemorySpine[spine]=CreateObject<SharedMemoryBuffer>();
+    // 	sharedMemorySpine[spine]->SetAttribute("BufferSize",UintegerValue(BufferSize));
+    // 	sharedMemorySpine[spine]->SetSharedBufferSize(BufferSize);
+    // }
+
+    // uint32_t leafPortId[LEAF_COUNT]={0};
+    // uint32_t spinePortId[SPINE_COUNT]={0};
     /*Server <--> Leaf*/
-    ipv4.SetBase ("10.1.0.0", "255.255.252.0");
-    p2p.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (LEAF_SERVER_CAPACITY)));
-    p2p.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
+    // ipv4.SetBase ("10.1.0.0", "255.255.252.0");
+    // p2p.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (LEAF_SERVER_CAPACITY)));
+    // p2p.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
     // p2p.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("10p"));
 
-    for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
-    	ipv4.NewNetwork ();
-    	for (uint32_t server = 0; server<SERVER_COUNT; server++){
-    		NodeContainer nodeContainer = NodeContainer (leaves.Get (leaf), servers[leaf].Get (server));
-    		NetDeviceContainer netDeviceContainer = p2p.Install (nodeContainer);
-    		QueueDiscContainer queueDiscs;
-    		queueDiscs = tc.Install(netDeviceContainer.Get(0));
+    // for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
+    // 	ipv4.NewNetwork ();
+    // 	for (uint32_t server = 0; server<SERVER_COUNT; server++){
+    // 		NodeContainer nodeContainer = NodeContainer (leaves.Get (leaf), servers[leaf].Get (server));
+    // 		NetDeviceContainer netDeviceContainer = p2p.Install (nodeContainer);
+    // 		QueueDiscContainer queueDiscs;
+    // 		queueDiscs = tc.Install(netDeviceContainer.Get(0));
 
-			ToRQueueDiscs[leaf].Add(queueDiscs.Get(0)); //MA
-    		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queueDiscs.Get (0));
-    		genDisc->SetPortId(leafPortId[leaf]++);
-    		switch(algorithm){
-    			case DT:
-    				genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-    				genDisc->setPortBw(leafServerCapacity);
-    				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
-    				genDisc->SetBufferAlgorithm(DT);
-    				for(uint32_t n=0;n<nPrior;n++){
-                        genDisc->alphas[n] = alpha_values[n];
-			std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
-                    }
-    				break;
-    			case FAB:
-	    			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-    				genDisc->setPortBw(leafServerCapacity);
-    				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
-    				genDisc->SetBufferAlgorithm(FAB);
-    				genDisc->SetFabWindow(MicroSeconds(5000));
-    				genDisc->SetFabThreshold(15*PACKET_SIZE);
-    				for(uint32_t n=0;n<nPrior;n++){
-                        genDisc->alphas[n] = alpha_values[n];
-                    }
-    				break;
-    			case CS:
-    				genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-    				genDisc->setPortBw(leafServerCapacity);
-    				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
-    				genDisc->SetBufferAlgorithm(CS);
-    				for(uint32_t n=0;n<nPrior;n++){
-                        genDisc->alphas[n] = alpha_values[n];
-                    }
-    				break;
-    			case IB:
-	    			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-    				genDisc->setPortBw(leafServerCapacity);
-    				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
-    				genDisc->SetBufferAlgorithm(IB);
-                    genDisc->SetAfdWindow(MicroSeconds(50));
-                    genDisc->SetDppWindow(MicroSeconds(5000));
-                    genDisc->SetDppThreshold(RTTPackets);
-    				for(uint32_t n=0;n<nPrior;n++){
-                        genDisc->alphas[n] = alpha_values[n];
-                        genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
-                    }
-    				break;
-    			case ABM:
-    				genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-    				genDisc->setPortBw(leafServerCapacity);
-    				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
-    				genDisc->SetBufferAlgorithm(ABM);
-    				for(uint32_t n=0;n<nPrior;n++){
-                        genDisc->alphas[n] = alpha_values[n];
-                    }
-    				break;
-    			default:
-    				std::cout << "Error in buffer management configuration. Exiting!";
-    				return 0;
-    		}
-    		serverNics[leaf][server] = ipv4.Assign(netDeviceContainer.Get(1));
-    		ipv4.Assign(netDeviceContainer.Get(0));
-    	}
-    }
+	// 		ToRQueueDiscs[leaf].Add(queueDiscs.Get(0)); //MA
+    // 		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queueDiscs.Get (0));
+    // 		genDisc->SetPortId(leafPortId[leaf]++);
+    // 		switch(algorithm){
+    // 			case DT:
+    // 				genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+    // 				genDisc->setPortBw(leafServerCapacity);
+    // 				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
+    // 				genDisc->SetBufferAlgorithm(DT);
+    // 				for(uint32_t n=0;n<nPrior;n++){
+    //                     genDisc->alphas[n] = alpha_values[n];
+	// 		std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
+    //                 }
+    // 				break;
+    // 			case FAB:
+	//     			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+    // 				genDisc->setPortBw(leafServerCapacity);
+    // 				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
+    // 				genDisc->SetBufferAlgorithm(FAB);
+    // 				genDisc->SetFabWindow(MicroSeconds(5000));
+    // 				genDisc->SetFabThreshold(15*PACKET_SIZE);
+    // 				for(uint32_t n=0;n<nPrior;n++){
+    //                     genDisc->alphas[n] = alpha_values[n];
+    //                 }
+    // 				break;
+    // 			case CS:
+    // 				genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+    // 				genDisc->setPortBw(leafServerCapacity);
+    // 				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
+    // 				genDisc->SetBufferAlgorithm(CS);
+    // 				for(uint32_t n=0;n<nPrior;n++){
+    //                     genDisc->alphas[n] = alpha_values[n];
+    //                 }
+    // 				break;
+    // 			case IB:
+	//     			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+    // 				genDisc->setPortBw(leafServerCapacity);
+    // 				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
+    // 				genDisc->SetBufferAlgorithm(IB);
+    //                 genDisc->SetAfdWindow(MicroSeconds(50));
+    //                 genDisc->SetDppWindow(MicroSeconds(5000));
+    //                 genDisc->SetDppThreshold(RTTPackets);
+    // 				for(uint32_t n=0;n<nPrior;n++){
+    //                     genDisc->alphas[n] = alpha_values[n];
+    //                     genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
+    //                 }
+    // 				break;
+    // 			case ABM:
+    // 				genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+    // 				genDisc->setPortBw(leafServerCapacity);
+    // 				genDisc->SetSharedMemory(sharedMemoryLeaf[leaf]);
+    // 				genDisc->SetBufferAlgorithm(ABM);
+    // 				for(uint32_t n=0;n<nPrior;n++){
+    //                     genDisc->alphas[n] = alpha_values[n];
+    //                 }
+    // 				break;
+    // 			default:
+    // 				std::cout << "Error in buffer management configuration. Exiting!";
+    // 				return 0;
+    // 		}
+    // 		serverNics[leaf][server] = ipv4.Assign(netDeviceContainer.Get(1));
+    // 		ipv4.Assign(netDeviceContainer.Get(0));
+    // 	}
+    // }
 
-    std::vector<InetSocketAddress> clients[LEAF_COUNT];
-    for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
-    	for (uint32_t leafnext = 0; leafnext < LEAF_COUNT ; leafnext++){
-    		if (leaf==leafnext){
-    			continue;
-    		}
-    		for (uint32_t server = 0; server < SERVER_COUNT; server++){
-    			clients[leaf].push_back(InetSocketAddress (serverNics[leafnext][server].GetAddress (0), 1000+leafnext*LEAF_COUNT + server));
-    		}
-    	}
-    }
+	// AnnC: [artemis-star-topology] this part seems not used at all in ABM; just commented out for now
+    // std::vector<InetSocketAddress> clients[LEAF_COUNT];
+    // for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
+    // 	for (uint32_t leafnext = 0; leafnext < LEAF_COUNT ; leafnext++){
+    // 		if (leaf==leafnext){
+    // 			continue;
+    // 		}
+    // 		for (uint32_t server = 0; server < SERVER_COUNT; server++){
+    // 			clients[leaf].push_back(InetSocketAddress (serverNics[leafnext][server].GetAddress (0), 1000+leafnext*LEAF_COUNT + server));
+    // 		}
+    // 	}
+    // }
 
    /*Leaf <--> Spine*/
-    p2p.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (SPINE_LEAF_CAPACITY)));
-    p2p.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
-    // p2p.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("10p"));
-    for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
-    	for (uint32_t spine = 0; spine< SPINE_COUNT; spine++){
-    		for (uint32_t link = 0; link< LINK_COUNT; link++){
-    			ipv4.NewNetwork ();
-    			NodeContainer nodeContainer = NodeContainer (leaves.Get (leaf), spines.Get (spine));
-                NetDeviceContainer netDeviceContainer = p2p.Install (nodeContainer);
-                QueueDiscContainer queueDiscs = tc.Install(netDeviceContainer);
-                northQueues[leaf].Add(queueDiscs.Get(0));
-		ToRQueueDiscs[leaf].Add(queueDiscs.Get(0));// MA
-                Ptr<GenQueueDisc> genDisc[2];
-                genDisc[0] = DynamicCast<GenQueueDisc> (queueDiscs.Get (0));
-                genDisc[0]->SetSharedMemory(sharedMemoryLeaf[leaf]);
-                genDisc[1] = DynamicCast<GenQueueDisc> (queueDiscs.Get (1));
-                genDisc[1]->SetSharedMemory(sharedMemorySpine[spine]);
-                genDisc[0]->SetPortId(leafPortId[leaf]++);
-                genDisc[1]->SetPortId(spinePortId[spine]++);
-                for (uint32_t i = 0; i<2; i++){
-	                switch(algorithm){
-		    			case DT:
-		    				genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
-		    				genDisc[i]->SetBufferAlgorithm(DT);
-		    				for(uint32_t n=0;n<nPrior;n++){
-		                        genDisc[i]->alphas[n] = alpha_values[n];
-							std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
-		                    }
-		    				break;
-		    			case FAB:
-			    			genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
-		    				genDisc[i]->SetBufferAlgorithm(FAB);
-		    				genDisc[i]->SetFabWindow(MicroSeconds(5000));
-		    				genDisc[i]->SetFabThreshold(15*PACKET_SIZE);
-		    				for(uint32_t n=0;n<nPrior;n++){
-		                        genDisc[i]->alphas[n] = alpha_values[n];
-		                    }
-		    				break;
-		    			case CS:
-		    				genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
-		    				genDisc[i]->SetBufferAlgorithm(CS);
-		    				for(uint32_t n=0;n<nPrior;n++){
-		                        genDisc[i]->alphas[n] = alpha_values[n];
-		                    }
-		    				break;
-		    			case IB:
-			    			genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
-		    				genDisc[i]->SetBufferAlgorithm(IB);
-		                    genDisc[i]->SetAfdWindow(MicroSeconds(50));
-		                    genDisc[i]->SetDppWindow(MicroSeconds(5000));
-		                    genDisc[i]->SetDppThreshold(RTTPackets);
-		    				for(uint32_t n=0;n<nPrior;n++){
-		                        genDisc[i]->alphas[n] = alpha_values[n];
-		                        genDisc[i]->SetQrefAfd(n,uint32_t(RTTBytes));
-		                    }
-		    				break;
-		    			case ABM:
-		    				genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
-		    				genDisc[i]->SetBufferAlgorithm(ABM);
-		    				for(uint32_t n=0;n<nPrior;n++){
-		                        genDisc[i]->alphas[n] = alpha_values[n];
-		                    }
-		    				break;
-		    			default:
-		    				std::cout << "Error in buffer management configuration. Exiting!";
-		    				return 0;
-		    		}
-		    	}
-	    		Ipv4InterfaceContainer interfaceContainer = ipv4.Assign (netDeviceContainer);
-    		}
-    	}
-    }
+    // p2p.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (SPINE_LEAF_CAPACITY)));
+    // p2p.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
+    // // p2p.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("10p"));
+    // for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
+    // 	for (uint32_t spine = 0; spine< SPINE_COUNT; spine++){
+    // 		for (uint32_t link = 0; link< LINK_COUNT; link++){
+    // 			ipv4.NewNetwork ();
+    // 			NodeContainer nodeContainer = NodeContainer (leaves.Get (leaf), spines.Get (spine));
+    //             NetDeviceContainer netDeviceContainer = p2p.Install (nodeContainer);
+    //             QueueDiscContainer queueDiscs = tc.Install(netDeviceContainer);
+    //             northQueues[leaf].Add(queueDiscs.Get(0));
+	// 	ToRQueueDiscs[leaf].Add(queueDiscs.Get(0));// MA
+    //             Ptr<GenQueueDisc> genDisc[2];
+    //             genDisc[0] = DynamicCast<GenQueueDisc> (queueDiscs.Get (0));
+    //             genDisc[0]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+    //             genDisc[1] = DynamicCast<GenQueueDisc> (queueDiscs.Get (1));
+    //             genDisc[1]->SetSharedMemory(sharedMemorySpine[spine]);
+    //             genDisc[0]->SetPortId(leafPortId[leaf]++);
+    //             genDisc[1]->SetPortId(spinePortId[spine]++);
+    //             for (uint32_t i = 0; i<2; i++){
+	//                 switch(algorithm){
+	// 	    			case DT:
+	// 	    				genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	// 	    				genDisc[i]->setPortBw(leafServerCapacity);
+	// 	    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+	// 	    				genDisc[i]->SetBufferAlgorithm(DT);
+	// 	    				for(uint32_t n=0;n<nPrior;n++){
+	// 	                        genDisc[i]->alphas[n] = alpha_values[n];
+	// 						std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
+	// 	                    }
+	// 	    				break;
+	// 	    			case FAB:
+	// 		    			genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	// 	    				genDisc[i]->setPortBw(leafServerCapacity);
+	// 	    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+	// 	    				genDisc[i]->SetBufferAlgorithm(FAB);
+	// 	    				genDisc[i]->SetFabWindow(MicroSeconds(5000));
+	// 	    				genDisc[i]->SetFabThreshold(15*PACKET_SIZE);
+	// 	    				for(uint32_t n=0;n<nPrior;n++){
+	// 	                        genDisc[i]->alphas[n] = alpha_values[n];
+	// 	                    }
+	// 	    				break;
+	// 	    			case CS:
+	// 	    				genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	// 	    				genDisc[i]->setPortBw(leafServerCapacity);
+	// 	    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+	// 	    				genDisc[i]->SetBufferAlgorithm(CS);
+	// 	    				for(uint32_t n=0;n<nPrior;n++){
+	// 	                        genDisc[i]->alphas[n] = alpha_values[n];
+	// 	                    }
+	// 	    				break;
+	// 	    			case IB:
+	// 		    			genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	// 	    				genDisc[i]->setPortBw(leafServerCapacity);
+	// 	    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+	// 	    				genDisc[i]->SetBufferAlgorithm(IB);
+	// 	                    genDisc[i]->SetAfdWindow(MicroSeconds(50));
+	// 	                    genDisc[i]->SetDppWindow(MicroSeconds(5000));
+	// 	                    genDisc[i]->SetDppThreshold(RTTPackets);
+	// 	    				for(uint32_t n=0;n<nPrior;n++){
+	// 	                        genDisc[i]->alphas[n] = alpha_values[n];
+	// 	                        genDisc[i]->SetQrefAfd(n,uint32_t(RTTBytes));
+	// 	                    }
+	// 	    				break;
+	// 	    			case ABM:
+	// 	    				genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	// 	    				genDisc[i]->setPortBw(leafServerCapacity);
+	// 	    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+	// 	    				genDisc[i]->SetBufferAlgorithm(ABM);
+	// 	    				for(uint32_t n=0;n<nPrior;n++){
+	// 	                        genDisc[i]->alphas[n] = alpha_values[n];
+	// 	                    }
+	// 	    				break;
+	// 	    			default:
+	// 	    				std::cout << "Error in buffer management configuration. Exiting!";
+	// 	    				return 0;
+	// 	    		}
+	// 	    	}
+	//     		Ipv4InterfaceContainer interfaceContainer = ipv4.Assign (netDeviceContainer);
+    // 		}
+    // 	}
+    // }
 
-	double oversubRatio = static_cast<double>(SERVER_COUNT * LEAF_SERVER_CAPACITY) / (SPINE_LEAF_CAPACITY * SPINE_COUNT * LINK_COUNT);
-	NS_LOG_INFO ("Over-subscription ratio: " << oversubRatio);
+	// double oversubRatio = static_cast<double>(SERVER_COUNT * LEAF_SERVER_CAPACITY) / (SPINE_LEAF_CAPACITY * SPINE_COUNT * LINK_COUNT);
+	// NS_LOG_INFO ("Over-subscription ratio: " << oversubRatio);
 	// NS_LOG_INFO ("Initialize CDF table");
 	// struct cdf_table* cdfTable = new cdf_table ();
 	// init_cdf (cdfTable);
 	// load_cdf (cdfTable, cdfFileName.c_str ());
-	NS_LOG_INFO ("Calculating request rate");
-	double requestRate = load * LEAF_SERVER_CAPACITY * SERVER_COUNT / oversubRatio / (8 * avg_cdf (cdfTable)) / SERVER_COUNT;
-	NS_LOG_INFO ("Average request rate: " << requestRate << " per second");
-	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
-	if (randomSeed == 0)
-	{
-	srand ((unsigned)time (NULL));
-	}
-	else
-	{
-	srand (randomSeed);
-	}
-	double QUERY_START_TIME = START_TIME;
+	// NS_LOG_INFO ("Calculating request rate");
+	// double requestRate = load * LEAF_SERVER_CAPACITY * SERVER_COUNT / oversubRatio / (8 * avg_cdf (cdfTable)) / SERVER_COUNT;
+	// NS_LOG_INFO ("Average request rate: " << requestRate << " per second");
+	// NS_LOG_INFO ("Initialize random seed: " << randomSeed);
+	// if (randomSeed == 0)
+	// {
+	// srand ((unsigned)time (NULL));
+	// }
+	// else
+	// {
+	// srand (randomSeed);
+	// }
+	// double QUERY_START_TIME = START_TIME;
 
-	long flowCount=0;
+	// long flowCount=0;
 
-	if (TcpProt != HOMA){
-		for (int fromLeafId = 1; fromLeafId < LEAF_COUNT; fromLeafId ++)
-	    {
-                        std::cout << "fromLeafId=" << fromLeafId << std::endl;
-			//install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
-			install_applications_simple_noincast_bursty(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
-			// install_applications(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
-			// if (queryRequestRate>0 && requestSize>0){
-			// 	install_applications_incast(fromLeafId, servers, queryRequestRate,requestSize, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, QUERY_START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
-			// }
-	    }
-		// std::cout << "hi" << std::endl;
-	 //    Config::ConnectWithoutContext("/NodeList/*/$ns3::PacketSink/FlowFinish", MakeBoundCallback(&TraceMsgFinish, msgStream));
-	 //    std::cout << "bye" << std::endl;
-	}
+	// if (TcpProt != HOMA){
+	// 	for (int fromLeafId = 1; fromLeafId < LEAF_COUNT; fromLeafId ++)
+	//     {
+    //                     std::cout << "fromLeafId=" << fromLeafId << std::endl;
+	// 		//install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+	// 		// install_applications_simple_noincast_bursty(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+	// 		install_applications(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+	// 		if (queryRequestRate>0 && requestSize>0){
+	// 			install_applications_incast(fromLeafId, servers, queryRequestRate,requestSize, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, QUERY_START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+	// 		}
+	//     }
+	// 	// std::cout << "hi" << std::endl;
+	//  //    Config::ConnectWithoutContext("/NodeList/*/$ns3::PacketSink/FlowFinish", MakeBoundCallback(&TraceMsgFinish, msgStream));
+	//  //    std::cout << "bye" << std::endl;
+	// }
 	// else{
 	// 	// Currently, incast workload is not supported here. We only use HOMA with a given flowsize cdf file.
 	// 	HomaHeader homah;
@@ -1354,12 +1509,13 @@ main (int argc, char *argv[])
 	// }
 
 
-	Simulator::Schedule(Seconds(START_TIME),InvokeToRStats,torStats, BufferSize, LEAF_COUNT, printDelay);
+	// Simulator::Schedule(Seconds(START_TIME),InvokeToRStats,torStats, BufferSize, LEAF_COUNT, printDelay);
+	Simulator::Schedule(Seconds(START_TIME),StarTopologyInvokeToRStats,torStats, BufferSize, LEAF_COUNT, printDelay);
 
 
 	// AsciiTraceHelper ascii;
  //    p2p.EnableAsciiAll (ascii.CreateFileStream ("eval.tr"));
-	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+	// Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	// NS_LOG_UNCOND("Running the Simulation...!");
 	std::cout << "Running the Simulation...!" << std::endl;
 	Simulator::Stop (Seconds (END_TIME));
