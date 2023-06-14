@@ -46,7 +46,7 @@
 # define TIMELY 6
 # define THETAPOWERTCP 7
 
-#define PORT_END 65530
+// #define PORT_END 65530
 
 extern "C"
 {
@@ -56,16 +56,16 @@ extern "C"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("ABM_EVALUATION");
+NS_LOG_COMPONENT_DEFINE ("STAR_SIMPLE");
 
-const uint32_t nPrior = 1;
+// const uint32_t nPrior = 1;
 
-uint32_t PORT_START[512]={4444};
+// uint32_t PORT_START[512]={4444};
 
 double alpha_values[8]={1};
 
-Ptr<OutputStreamWrapper> fctOutput;
-AsciiTraceHelper asciiTraceHelper;
+// Ptr<OutputStreamWrapper> fctOutput;
+// AsciiTraceHelper asciiTraceHelper;
 
 Ptr<OutputStreamWrapper> torStats;
 AsciiTraceHelper torTraceHelper;
@@ -91,30 +91,30 @@ double poission_gen_interval(double avg_rate)
 //     return min + ((double)max - min) * rand () / RAND_MAX;
 // }
 
-double baseRTTNano;
-double nicBw;
-void TraceMsgFinish (Ptr<OutputStreamWrapper> stream, double size, double start, bool incast,uint32_t prior )
-{
-  double fct, standalone_fct,slowdown;
-	fct = Simulator::Now().GetNanoSeconds()- start;
-	standalone_fct = baseRTTNano + size*8.0/ nicBw;
-	slowdown = fct/standalone_fct;
+// double baseRTTNano;
+// double nicBw;
+// void TraceMsgFinish (Ptr<OutputStreamWrapper> stream, double size, double start, bool incast,uint32_t prior )
+// {
+//   double fct, standalone_fct,slowdown;
+// 	fct = Simulator::Now().GetNanoSeconds()- start;
+// 	standalone_fct = baseRTTNano + size*8.0/ nicBw;
+// 	slowdown = fct/standalone_fct;
 
-	*stream->GetStream ()
-	<< Simulator::Now().GetNanoSeconds()
-  	<< " " << size
-  	<< " " << fct
-  	<< " " << standalone_fct
-  	<< " " << slowdown
-  	<< " " << baseRTTNano/1e3
-  	<< " " << (start/1e3- Seconds(10).GetMicroSeconds())
-	<< " " << prior
-	<< " " << incast
-	<< std::endl;
-}
+// 	*stream->GetStream ()
+// 	<< Simulator::Now().GetNanoSeconds()
+//   	<< " " << size
+//   	<< " " << fct
+//   	<< " " << standalone_fct
+//   	<< " " << slowdown
+//   	<< " " << baseRTTNano/1e3
+//   	<< " " << (start/1e3- Seconds(10).GetMicroSeconds())
+// 	<< " " << prior
+// 	<< " " << incast
+// 	<< std::endl;
+// }
 
 
-void StarTopologyInvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_COUNT, double nanodelay){
+void StarTopologyInvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, double nanodelay, uint32_t nPrior){
 
 	int64_t currentNanoSeconds = Simulator::Now().GetNanoSeconds();
 
@@ -159,7 +159,7 @@ void StarTopologyInvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t Buffer
 	// 	*stream->GetStream() << std::endl;
 	// }
 
-	Simulator::Schedule(NanoSeconds(nanodelay), StarTopologyInvokeToRStats, stream, BufferSize, LEAF_COUNT, nanodelay);
+	Simulator::Schedule(NanoSeconds(nanodelay), StarTopologyInvokeToRStats, stream, BufferSize, nanodelay, nPrior);
 }
 
 
@@ -529,23 +529,32 @@ main (int argc, char *argv[])
 	unsigned randomSeed = 8;
 	cmd.AddValue ("randomSeed", "Random seed, 0 for random generated", randomSeed);
 
-	double load = 0.6;
-	cmd.AddValue ("load", "Load of the network, 0.0 - 1.0", load);
+	// double load = 0.6;
+	// cmd.AddValue ("load", "Load of the network, 0.0 - 1.0", load);
 
-	uint32_t SERVER_COUNT = 32;
-	uint32_t SPINE_COUNT = 2;
-	uint32_t LEAF_COUNT = 2;
-	uint32_t LINK_COUNT = 4;
-	uint64_t spineLeafCapacity = 1; // Maria Gbps
-	uint64_t leafServerCapacity = 1; //Maria Gbps
-	double linkLatency = 10;
-	cmd.AddValue ("serverCount", "The Server count", SERVER_COUNT);
-	cmd.AddValue ("spineCount", "The Spine count", SPINE_COUNT);
-	cmd.AddValue ("leafCount", "The Leaf count", LEAF_COUNT);
-	cmd.AddValue ("linkCount", "The Link count", LINK_COUNT);
-	cmd.AddValue ("spineLeafCapacity", "Spine <-> Leaf capacity in Gbps", spineLeafCapacity);
-	cmd.AddValue ("leafServerCapacity", "Leaf <-> Server capacity in Gbps", leafServerCapacity);
-	cmd.AddValue ("linkLatency", "linkLatency in microseconds", linkLatency);
+	// uint32_t SERVER_COUNT = 32;
+	// uint32_t SPINE_COUNT = 2;
+	// uint32_t LEAF_COUNT = 2;
+	// uint32_t LINK_COUNT = 4;
+	// uint64_t spineLeafCapacity = 1; // Maria Gbps
+	// uint64_t leafServerCapacity = 1; //Maria Gbps
+	// double linkLatency = 10;
+	// cmd.AddValue ("serverCount", "The Server count", SERVER_COUNT);
+	// cmd.AddValue ("spineCount", "The Spine count", SPINE_COUNT);
+	// cmd.AddValue ("leafCount", "The Leaf count", LEAF_COUNT);
+	// cmd.AddValue ("linkCount", "The Link count", LINK_COUNT);
+	// cmd.AddValue ("spineLeafCapacity", "Spine <-> Leaf capacity in Gbps", spineLeafCapacity);
+	// cmd.AddValue ("leafServerCapacity", "Leaf <-> Server capacity in Gbps", leafServerCapacity);
+	// cmd.AddValue ("linkLatency", "linkLatency in microseconds", linkLatency);
+
+	uint64_t serverLeafCapacity = 1;
+	uint64_t leafSinkCapacity = 1;
+	double serverLeafLinkLatency = 10;
+	double leafSinkLinkLatency = 10;
+	cmd.AddValue("serverLeafCapacity", "Server <-> Leaf capacity in Gbps", serverLeafCapacity);
+	cmd.AddValue("leafSinkCapacity", "Leaf <-> Sink capacity in Gbps", leafSinkCapacity);
+	cmd.AddValue("serverLeafLinkLatency", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatency);
+	cmd.AddValue("leafSinkLinkLatency", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatency);
 
 	uint32_t TcpProt=CUBIC;
 	cmd.AddValue("TcpProt","Tcp protocol",TcpProt);
@@ -570,10 +579,10 @@ main (int argc, char *argv[])
 	std::string sched = "roundRobin";
 	cmd.AddValue ("sched", "scheduling", sched);
 
-	uint32_t requestSize = 0.2*BufferSize;
-	double queryRequestRate = 0; // at each server (per second)
-	cmd.AddValue ("request", "Query Size in Bytes", requestSize);
-	cmd.AddValue("queryRequestRate","Query request rate (poisson arrivals)",queryRequestRate);
+	// uint32_t requestSize = 0.2*BufferSize;
+	// double queryRequestRate = 0; // at each server (per second)
+	// cmd.AddValue ("request", "Query Size in Bytes", requestSize);
+	// cmd.AddValue("queryRequestRate","Query request rate (poisson arrivals)",queryRequestRate);
 
 	uint32_t nPrior = 1; // number queues in switch ports
 	cmd.AddValue ("nPrior", "number of priorities",nPrior);
@@ -588,12 +597,12 @@ main (int argc, char *argv[])
 	uint32_t printDelay= 1e3;
 	cmd.AddValue("printDelay","printDelay in NanoSeconds", printDelay);
 
-	double alphaUpdateInterval=1;
-	cmd.AddValue("alphaUpdateInterval","(Number of Rtts) update interval for alpha values in ABM",alphaUpdateInterval);
+	// double alphaUpdateInterval=1;
+	// cmd.AddValue("alphaUpdateInterval","(Number of Rtts) update interval for alpha values in ABM",alphaUpdateInterval);
 
 
-	std::string fctOutFile="./fcts.txt";
-	cmd.AddValue ("fctOutFile", "File path for FCTs", fctOutFile);
+	// std::string fctOutFile="./fcts.txt";
+	// cmd.AddValue ("fctOutFile", "File path for FCTs", fctOutFile);
 
 	std::string torOutFile="./tor.txt";
 	cmd.AddValue ("torOutFile", "File path for ToR statistic", torOutFile);
@@ -604,19 +613,19 @@ main (int argc, char *argv[])
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
-	fctOutput = asciiTraceHelper.CreateFileStream (fctOutFile);
+	// fctOutput = asciiTraceHelper.CreateFileStream (fctOutFile);
 
-	*fctOutput->GetStream ()
-	<< "time "
-  	<< "flowsize "
-  	<< "fct "
-  	<< "basefct "
-  	<< "slowdown "
-  	<< "basertt "
-  	<<  "flowstart "
-	<< "priority "
-	<< "incast "
-	<< std::endl;
+	// *fctOutput->GetStream ()
+	// << "time "
+  	// << "flowsize "
+  	// << "fct "
+  	// << "basefct "
+  	// << "slowdown "
+  	// << "basertt "
+  	// <<  "flowstart "
+	// << "priority "
+	// << "incast "
+	// << std::endl;
 
 	torStats = torTraceHelper.CreateFileStream (torOutFile);
 
@@ -706,24 +715,28 @@ main (int argc, char *argv[])
 	aFile.close();
 
 
-	uint64_t SPINE_LEAF_CAPACITY = spineLeafCapacity * GIGA;
-    uint64_t LEAF_SERVER_CAPACITY = leafServerCapacity * GIGA;
-    Time LINK_LATENCY = MicroSeconds(linkLatency);
+	// uint64_t SPINE_LEAF_CAPACITY = spineLeafCapacity * GIGA;
+    // uint64_t LEAF_SERVER_CAPACITY = leafServerCapacity * GIGA;
+    // Time LINK_LATENCY = MicroSeconds(linkLatency);
 
-	// AnnC: [artemis-star-topology] the calculation is wrong for sure; leave it as this for now; will come back and change later
-	double RTTBytes = (LEAF_SERVER_CAPACITY*1e-6)*linkLatency; // 8 links visited in roundtrip according to the topology, divided by 8 for bytes
-	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
-	baseRTTNano = linkLatency*8*1e3;
-	nicBw = leafServerCapacity;
+	// double RTTBytes = (LEAF_SERVER_CAPACITY*1e-6)*linkLatency; // 8 links visited in roundtrip according to the topology, divided by 8 for bytes
+	// uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
+	// baseRTTNano = linkLatency*8*1e3;
+	// nicBw = leafServerCapacity;
     // std::cout << "bandwidth " << spineLeafCapacity << "gbps" <<  " rtt " << linkLatency*8 << "us" << " BDP " << bdp/1e6 << std::endl;
 
-    if (load < 0.0)
-    {
-    	NS_LOG_ERROR ("Illegal Load value");
-    	return 0;
-    }
+	// AnnC: [artemis-star-topology] Not really sure about what the calculation is for.
+	double RTTBytes = (serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatency)*2*1e3/8;
+	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
+	// double baseRTTNano = (serverLeafLinkLatency+leafSinkLinkLatency)*2*1e3;
 
-    Config::SetDefault("ns3::GenQueueDisc::updateInterval", UintegerValue(alphaUpdateInterval*linkLatency*8*1000));
+    // if (load < 0.0)
+    // {
+    // 	NS_LOG_ERROR ("Illegal Load value");
+    // 	return 0;
+    // }
+
+    // Config::SetDefault("ns3::GenQueueDisc::updateInterval", UintegerValue(alphaUpdateInterval*linkLatency*8*1000));
     Config::SetDefault("ns3::GenQueueDisc::staticBuffer", UintegerValue(staticBuffer));
     Config::SetDefault("ns3::GenQueueDisc::BufferAlgorithm", UintegerValue(algorithm));
     Config::SetDefault("ns3::SharedMemoryBuffer::BufferSize", UintegerValue(BufferSize));
@@ -739,7 +752,6 @@ main (int argc, char *argv[])
 	Config::SetDefault ("ns3::TcpSocket::RcvBufSize", UintegerValue (1073725440));
     Config::SetDefault ("ns3::TcpSocket::ConnCount", UintegerValue (6));  // Syn retry count
     Config::SetDefault ("ns3::TcpSocketBase::Timestamp", BooleanValue (true));
-	// AnnC: [artemis-star-topology] PACKET_SIZE
     Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (PACKET_SIZE));
     Config::SetDefault ("ns3::TcpSocket::DelAckCount", UintegerValue (0));
     Config::SetDefault ("ns3::TcpSocket::PersistTimeout", TimeValue (Seconds (20)));
@@ -781,9 +793,6 @@ main (int argc, char *argv[])
 	tchPfifoFastAccess.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("1000p"));
 
 	TrafficControlHelper tc;
-	// AnnC: [artemis-star-topology] declared above
-	// uint16_t handle;
-	// TrafficControlHelper tc;
     uint16_t handle;
     TrafficControlHelper::ClassIdList cid;
 
@@ -838,100 +847,100 @@ main (int argc, char *argv[])
 				tc.AddChildQueueDisc (handle, cid[num], "ns3::RedQueueDisc", "MinTh", DoubleValue (RedMinTh*PACKET_SIZE), "MaxTh", DoubleValue (RedMaxTh*PACKET_SIZE));
 			}
 			break;
-		case HPCC:
-			Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
-			// Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
-			Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("100Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
-			Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("100Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::mThreshHpcc", UintegerValue(5));
-			Config::SetDefault("ns3::TcpSocketState::fastReactHpcc", BooleanValue(true));
-			Config::SetDefault("ns3::TcpSocketState::sampleFeedbackHpcc", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::useHpcc", BooleanValue(true));
-			Config::SetDefault("ns3::TcpSocketState::multipleRateHpcc", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::targetUtil", DoubleValue(0.95));
-			Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
-			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
-			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
-			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
-			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
-			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
-		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
-			for(uint32_t num=0;num<nPrior;num++){
-				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
-			}
-			break;
-		case TIMELY:
-			Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
-			// Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
-			Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("100Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
-			Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("100Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::HighAIWien", DataRateValue(DataRate("150Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::useTimely", BooleanValue(true));
-			Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
-			// Config::SetDefault("ns3::TcpSocketState::TimelyTlow", UintegerValue((linkLatency*4*2*1.5)*1000)); // in nanoseconds
-			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
-			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
-			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
-			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
-			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
-		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
-			for(uint32_t num=0;num<nPrior;num++){
-				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
-			}
-			break;
-		case POWERTCP:
-			Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
-			// Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
-			Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("100Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
-			Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("100Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::mThreshHpcc", UintegerValue(5));
-			Config::SetDefault("ns3::TcpSocketState::fastReactHpcc", BooleanValue(true));
-			Config::SetDefault("ns3::TcpSocketState::sampleFeedbackHpcc", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::useHpcc", BooleanValue(false)); // This parameter is critical. Pay attention. Both HPCC and PowerTCP are implemented in the same file tcp-wien.
-			Config::SetDefault("ns3::TcpSocketState::multipleRateHpcc", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::targetUtil", DoubleValue(0.95));
-			Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
-			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
-			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
-			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
-			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
-			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
-		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
-			for(uint32_t num=0;num<nPrior;num++){
-				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
-			}
-			break;
-		case THETAPOWERTCP:
-			Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
-			// Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
-			Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("100Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
-			Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("100Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::mThreshHpcc", UintegerValue(5));
-			Config::SetDefault("ns3::TcpSocketState::fastReactHpcc", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::sampleFeedbackHpcc", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::useThetaPower", BooleanValue(true)); // This parameter is critical. Pay attention. Both HPCC and PowerTCP are implemented in the same file tcp-wien.
-			Config::SetDefault("ns3::TcpSocketState::multipleRateHpcc", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::targetUtil", DoubleValue(0.95));
-			// AnnC: [artemis-star-topology] this part may become a problem when I shift to the star topology
-			Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
-			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
-			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
-			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
-			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
-			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
-		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
-			for(uint32_t num=0;num<nPrior;num++){
-				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
-			}
-			break;
+		// case HPCC:
+		// 	Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
+		// 	// Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
+		// 	Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("100Mbps")));
+		// 	Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
+		// 	Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("100Mbps")));
+		// 	Config::SetDefault("ns3::TcpSocketState::mThreshHpcc", UintegerValue(5));
+		// 	Config::SetDefault("ns3::TcpSocketState::fastReactHpcc", BooleanValue(true));
+		// 	Config::SetDefault("ns3::TcpSocketState::sampleFeedbackHpcc", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::useHpcc", BooleanValue(true));
+		// 	Config::SetDefault("ns3::TcpSocketState::multipleRateHpcc", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::targetUtil", DoubleValue(0.95));
+		// 	Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
+		// 	Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
+		// 	Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
+		// 	Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
+		// 	Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
+		// 	handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
+		//     cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
+		// 	for(uint32_t num=0;num<nPrior;num++){
+		// 		tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
+		// 	}
+		// 	break;
+		// case TIMELY:
+		// 	Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
+		// 	// Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
+		// 	Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("100Mbps")));
+		// 	Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
+		// 	Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("100Mbps")));
+		// 	Config::SetDefault("ns3::TcpSocketState::HighAIWien", DataRateValue(DataRate("150Mbps")));
+		// 	Config::SetDefault("ns3::TcpSocketState::useTimely", BooleanValue(true));
+		// 	Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
+		// 	// Config::SetDefault("ns3::TcpSocketState::TimelyTlow", UintegerValue((linkLatency*4*2*1.5)*1000)); // in nanoseconds
+		// 	Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
+		// 	Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
+		// 	Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
+		// 	Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
+		// 	handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
+		//     cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
+		// 	for(uint32_t num=0;num<nPrior;num++){
+		// 		tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
+		// 	}
+		// 	break;
+		// case POWERTCP:
+		// 	Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
+		// 	// Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
+		// 	Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("100Mbps")));
+		// 	Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
+		// 	Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("100Mbps")));
+		// 	Config::SetDefault("ns3::TcpSocketState::mThreshHpcc", UintegerValue(5));
+		// 	Config::SetDefault("ns3::TcpSocketState::fastReactHpcc", BooleanValue(true));
+		// 	Config::SetDefault("ns3::TcpSocketState::sampleFeedbackHpcc", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::useHpcc", BooleanValue(false)); // This parameter is critical. Pay attention. Both HPCC and PowerTCP are implemented in the same file tcp-wien.
+		// 	Config::SetDefault("ns3::TcpSocketState::multipleRateHpcc", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::targetUtil", DoubleValue(0.95));
+		// 	Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
+		// 	Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
+		// 	Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
+		// 	Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
+		// 	Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
+		// 	handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
+		//     cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
+		// 	for(uint32_t num=0;num<nPrior;num++){
+		// 		tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
+		// 	}
+		// 	break;
+		// case THETAPOWERTCP:
+		// 	Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
+		// 	// Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
+		// 	Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("100Mbps")));
+		// 	Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY)));
+		// 	Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("100Mbps")));
+		// 	Config::SetDefault("ns3::TcpSocketState::mThreshHpcc", UintegerValue(5));
+		// 	Config::SetDefault("ns3::TcpSocketState::fastReactHpcc", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::sampleFeedbackHpcc", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::useThetaPower", BooleanValue(true)); // This parameter is critical. Pay attention. Both HPCC and PowerTCP are implemented in the same file tcp-wien.
+		// 	Config::SetDefault("ns3::TcpSocketState::multipleRateHpcc", BooleanValue(false));
+		// 	Config::SetDefault("ns3::TcpSocketState::targetUtil", DoubleValue(0.95));
+		// 	// AnnC: [artemis-star-topology] this part may become a problem when I shift to the star topology
+		// 	Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
+		// 	Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
+		// 	Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
+		// 	Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
+		// 	Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
+		// 	handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
+		//     cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
+		// 	for(uint32_t num=0;num<nPrior;num++){
+		// 		tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
+		// 	}
+		// 	break;
 		// case HOMA:
 		// 	Config::SetDefault("ns3::HomaL4Protocol::RttPackets", UintegerValue(RTTPackets));
 		// 	Config::SetDefault("ns3::HomaL4Protocol::NumTotalPrioBands", UintegerValue(8));
@@ -1015,8 +1024,8 @@ main (int argc, char *argv[])
 	int portid = 0;
 
 	PointToPointHelper accessLink;
-	accessLink.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
-	accessLink.SetChannelAttribute ("Delay", StringValue ("0.1ms"));
+	accessLink.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
+	accessLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(serverLeafLinkLatency)));
 	// AnnC: [artemis-star-topology] maybe no need to explicitly change Queue if we also have QueueDisc
 	// if (dropTail) {
 	// 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
@@ -1032,7 +1041,7 @@ main (int argc, char *argv[])
 		// AnnC: [artemis-star-topology] maybe this part is not even necessary
 		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
 		// AnnC: [artemis-star-topology] check whether it is right to set it to leafServerCapacity
-		genDisc->setPortBw(leafServerCapacity);
+		genDisc->setPortBw(serverLeafCapacity);
 		genDisc->SetSharedMemory(sharedMemory);
 		genDisc->SetBufferAlgorithm(DT);
 		for(uint32_t n=0;n<nPrior;n++){
@@ -1043,8 +1052,8 @@ main (int argc, char *argv[])
 	}
 
 	PointToPointHelper bottleneckLink;
-	bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (LEAF_SERVER_CAPACITY)));
-	bottleneckLink.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
+	bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
+	bottleneckLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatency)));
 	// if (dropTail) {
 	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
 	// }
@@ -1126,21 +1135,18 @@ main (int argc, char *argv[])
 	bottleneckQueueDiscs.Add(qdiscs.Get(0));
 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
 	genDisc->SetPortId(portid++);
+	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	// AnnC: [artemis-star-topology] check whether it is right to set it to leafServerCapacity
+	genDisc->setPortBw(leafSinkCapacity);
+	genDisc->SetSharedMemory(sharedMemory);
 	switch(algorithm){
 		case DT:
-			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-			// AnnC: [artemis-star-topology] check whether it is right to set it to leafServerCapacity
-			genDisc->setPortBw(leafServerCapacity);
-			genDisc->SetSharedMemory(sharedMemory);
 			genDisc->SetBufferAlgorithm(DT);
 			for(uint32_t n=0;n<nPrior;n++){
 				genDisc->alphas[n] = alpha_values[n];
 			}
 			break;
 		case FAB:
-			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-			genDisc->setPortBw(leafServerCapacity);
-			genDisc->SetSharedMemory(sharedMemory);
 			genDisc->SetBufferAlgorithm(FAB);
 			genDisc->SetFabWindow(MicroSeconds(5000));
 			// AnnC: [artemis-star-topology] PACKET_SIZE should be replaced
@@ -1150,18 +1156,12 @@ main (int argc, char *argv[])
 			}
 			break;
 		case CS:
-			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-			genDisc->setPortBw(leafServerCapacity);
-			genDisc->SetSharedMemory(sharedMemory);
 			genDisc->SetBufferAlgorithm(CS);
 			for(uint32_t n=0;n<nPrior;n++){
 				genDisc->alphas[n] = alpha_values[n];
 			}
 			break;
 		case IB:
-			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-			genDisc->setPortBw(leafServerCapacity);
-			genDisc->SetSharedMemory(sharedMemory);
 			genDisc->SetBufferAlgorithm(IB);
 			genDisc->SetAfdWindow(MicroSeconds(50));
 			genDisc->SetDppWindow(MicroSeconds(5000));
@@ -1172,9 +1172,6 @@ main (int argc, char *argv[])
 			}
 			break;
 		case ABM:
-			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-			genDisc->setPortBw(leafServerCapacity);
-			genDisc->SetSharedMemory(sharedMemory);
 			genDisc->SetBufferAlgorithm(ABM);
 			for(uint32_t n=0;n<nPrior;n++){
 				genDisc->alphas[n] = alpha_values[n];
@@ -1187,7 +1184,7 @@ main (int argc, char *argv[])
 
 
 	// AnnC: [artemis-star-topology] pass in flowsPacketsSize as a parameter
-	uint32_t flowsPacketsSize = 1000;
+	// uint32_t flowsPacketsSize = 1000;
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 	// AnnC: [artemis-star-topology] look duplicated from above
 	// Config::SetDefault ("ns3::TcpSocket::SegmentSize", UintegerValue (flowsPacketsSize));
@@ -1234,6 +1231,7 @@ main (int argc, char *argv[])
 		sourceApps.Add (bulkSendHelperUp.Install (nodecontainers.Get(i)));
 		// AnnC: [artemis-star-topology] in ABM, the request rate (0.2 here) is calculated instead
 		double startTime = poission_gen_interval(0.2);
+		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) startTime = poission_gen_interval(0.2);
 		std::cout << startTime << std::endl;
 		sourceApps.Get(i)->SetStartTime (Seconds (startTime));
 	}
@@ -1537,7 +1535,7 @@ main (int argc, char *argv[])
 
 
 	// Simulator::Schedule(Seconds(START_TIME),InvokeToRStats,torStats, BufferSize, LEAF_COUNT, printDelay);
-	Simulator::Schedule(Seconds(START_TIME),StarTopologyInvokeToRStats,torStats, BufferSize, LEAF_COUNT, printDelay);
+	Simulator::Schedule(Seconds(START_TIME),StarTopologyInvokeToRStats,torStats, BufferSize, printDelay, nPrior);
 
 
 	// AsciiTraceHelper ascii;
