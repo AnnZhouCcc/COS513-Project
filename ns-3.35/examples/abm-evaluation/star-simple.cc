@@ -929,7 +929,6 @@ main (int argc, char *argv[])
 		// 	Config::SetDefault("ns3::TcpSocketState::useThetaPower", BooleanValue(true)); // This parameter is critical. Pay attention. Both HPCC and PowerTCP are implemented in the same file tcp-wien.
 		// 	Config::SetDefault("ns3::TcpSocketState::multipleRateHpcc", BooleanValue(false));
 		// 	Config::SetDefault("ns3::TcpSocketState::targetUtil", DoubleValue(0.95));
-		// 	// AnnC: [artemis-star-topology] this part may become a problem when I shift to the star topology
 		// 	Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds(linkLatency*4*2 + 2*double(PACKET_SIZE*8)/(LEAF_SERVER_CAPACITY))));
 		// 	Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
 		// 	Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
@@ -1040,7 +1039,6 @@ main (int argc, char *argv[])
 		// assume to be DT
 		// AnnC: [artemis-star-topology] maybe this part is not even necessary
 		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		// AnnC: [artemis-star-topology] check whether it is right to set it to leafServerCapacity
 		genDisc->setPortBw(serverLeafCapacity);
 		genDisc->SetSharedMemory(sharedMemory);
 		genDisc->SetBufferAlgorithm(DT);
@@ -1060,7 +1058,7 @@ main (int argc, char *argv[])
 	/* Leaf <--> Sink */
 	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), ns.Get (0));
 	// AnnC: [artemis-star-topology] check size here; maybe 1 or 2; could change how we install later
-	// std::cout << devicesBottleneckLink.GetN() << std::endl;
+	std::cout << devicesBottleneckLink.GetN() << std::endl;
 	address.NewNetwork ();
 	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
 	Ipv4InterfaceContainer nsInterface;
@@ -1136,7 +1134,6 @@ main (int argc, char *argv[])
 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
 	genDisc->SetPortId(portid++);
 	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-	// AnnC: [artemis-star-topology] check whether it is right to set it to leafServerCapacity
 	genDisc->setPortBw(leafSinkCapacity);
 	genDisc->SetSharedMemory(sharedMemory);
 	switch(algorithm){
@@ -1149,7 +1146,6 @@ main (int argc, char *argv[])
 		case FAB:
 			genDisc->SetBufferAlgorithm(FAB);
 			genDisc->SetFabWindow(MicroSeconds(5000));
-			// AnnC: [artemis-star-topology] PACKET_SIZE should be replaced
 			genDisc->SetFabThreshold(15*PACKET_SIZE);
 			for(uint32_t n=0;n<nPrior;n++){
 				genDisc->alphas[n] = alpha_values[n];
