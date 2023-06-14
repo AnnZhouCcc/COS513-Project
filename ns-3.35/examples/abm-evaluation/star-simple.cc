@@ -91,27 +91,27 @@ double poission_gen_interval(double avg_rate)
 //     return min + ((double)max - min) * rand () / RAND_MAX;
 // }
 
-// double baseRTTNano;
-// double nicBw;
-// void TraceMsgFinish (Ptr<OutputStreamWrapper> stream, double size, double start, bool incast,uint32_t prior )
-// {
-//   double fct, standalone_fct,slowdown;
-// 	fct = Simulator::Now().GetNanoSeconds()- start;
-// 	standalone_fct = baseRTTNano + size*8.0/ nicBw;
-// 	slowdown = fct/standalone_fct;
+double baseRTTNano;
+double nicBw;
+void TraceMsgFinish (Ptr<OutputStreamWrapper> stream, double size, double start, bool incast,uint32_t prior )
+{
+  double fct, standalone_fct,slowdown;
+	fct = Simulator::Now().GetNanoSeconds()- start;
+	standalone_fct = baseRTTNano + size*8.0/ nicBw;
+	slowdown = fct/standalone_fct;
 
-// 	*stream->GetStream ()
-// 	<< Simulator::Now().GetNanoSeconds()
-//   	<< " " << size
-//   	<< " " << fct
-//   	<< " " << standalone_fct
-//   	<< " " << slowdown
-//   	<< " " << baseRTTNano/1e3
-//   	<< " " << (start/1e3- Seconds(10).GetMicroSeconds())
-// 	<< " " << prior
-// 	<< " " << incast
-// 	<< std::endl;
-// }
+	*stream->GetStream ()
+	<< Simulator::Now().GetNanoSeconds()
+  	<< " " << size
+  	<< " " << fct
+  	<< " " << standalone_fct
+  	<< " " << slowdown
+  	<< " " << baseRTTNano/1e3
+  	<< " " << (start/1e3- Seconds(10).GetMicroSeconds())
+	<< " " << prior
+	<< " " << incast
+	<< std::endl;
+}
 
 
 void StarTopologyInvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, int LEAF_COUNT, double nanodelay){
@@ -679,7 +679,7 @@ main (int argc, char *argv[])
 
 	// AnnC: [artemis-star-topology] double check the buffer calculation here
 	// uint32_t staticBuffer = (double) BufferSize*statBuf/(SERVER_COUNT+SPINE_COUNT*LINK_COUNT);
-	uint32_t staticBuffer = (double) BufferSize*statBuf/numSinks;
+	uint32_t staticBuffer = 0;
 	BufferSize = BufferSize - staticBuffer; // BufferSize is the buffer pool which is available for sharing
 	if(UseEcn){
 		ecnEnabled = "EcnEnabled";
@@ -713,8 +713,8 @@ main (int argc, char *argv[])
 	// AnnC: [artemis-star-topology] the calculation is wrong for sure; leave it as this for now; will come back and change later
 	double RTTBytes = (LEAF_SERVER_CAPACITY*1e-6)*linkLatency; // 8 links visited in roundtrip according to the topology, divided by 8 for bytes
 	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
-	double baseRTTNano = linkLatency*8*1e3;
-	double nicBw = leafServerCapacity;
+	baseRTTNano = linkLatency*8*1e3;
+	nicBw = leafServerCapacity;
     // std::cout << "bandwidth " << spineLeafCapacity << "gbps" <<  " rtt " << linkLatency*8 << "us" << " BDP " << bdp/1e6 << std::endl;
 
     if (load < 0.0)
@@ -750,40 +750,23 @@ main (int argc, char *argv[])
 	/****************************************************************/
 
 	int numNodes = 10;
-	NodeContainer n0, n1, n2, n3, n4, n5, n6, n7, n8, n9, nd, ns; 
-	n0.Create (1);
-	n1.Create (1);
-	n2.Create (1);
-	n3.Create (1);
-	n4.Create (1);
-	n5.Create (1);
-	n6.Create (1);
-	n7.Create (1);
-	n8.Create (1);
-	n9.Create (1);
+	NodeContainer nodecontainers;
+	// NodeContainer n0, n1, n2, n3, n4, n5, n6, n7, n8, n9, nd, ns; 
+	nodecontainers.Create(numNodes);
+	// n0.Create (1);
+	// n1.Create (1);
+	// n2.Create (1);
+	// n3.Create (1);
+	// n4.Create (1);
+	// n5.Create (1);
+	// n6.Create (1);
+	// n7.Create (1);
+	// n8.Create (1);
+	// n9.Create (1);
+	NodeContainer nd, ns; 
 	nd.Create (1);
 	ns.Create (1);
-
-
-	// AnnC: [artemis-star-topology] add in proper queue management; for now, assume droptail
-	std::string queueDiscType = "droptail";
-	bool dropTail = (queueDiscType == "droptail");
-	// AnnC: [artemis-star-topology] add in max queue size for droptail
-	uint32_t queueDiscSize = 10;
-
-	PointToPointHelper accessLink;
-	accessLink.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
-	accessLink.SetChannelAttribute ("Delay", StringValue ("0.1ms"));
-	if (dropTail) {
-		accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
-	}
-
-	PointToPointHelper bottleneckLink;
-	bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (LEAF_SERVER_CAPACITY)));
-	bottleneckLink.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
-	if (dropTail) {
-		bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
-	}
+	// NodeContainer nodecontainers[numNodes] = {n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
 
 
 	InternetStackHelper stack;
@@ -949,27 +932,27 @@ main (int argc, char *argv[])
 				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
 			}
 			break;
-		case HOMA:
-			Config::SetDefault("ns3::HomaL4Protocol::RttPackets", UintegerValue(RTTPackets));
-			Config::SetDefault("ns3::HomaL4Protocol::NumTotalPrioBands", UintegerValue(8));
-			Config::SetDefault("ns3::HomaL4Protocol::NumUnschedPrioBands", UintegerValue(2));
-			Config::SetDefault("ns3::HomaL4Protocol::InbndRtxTimeout", TimeValue (MicroSeconds (1000)));
-			Config::SetDefault("ns3::HomaL4Protocol::OutbndRtxTimeout", TimeValue (MicroSeconds (10000)));
-			Config::SetDefault("ns3::HomaL4Protocol::OvercommitLevel", UintegerValue(6));
-			Config::SetDefault("ns3::HomaL4Protocol::m_linkRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY )));
-			Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting", BooleanValue(true));
-			Config::SetDefault("ns3::Ipv4L3Protocol::MayFragment", BooleanValue(false));
-			Config::SetDefault("ns3::GenQueueDisc::HomaQueue", BooleanValue(true));
-			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(8));
-			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(0));
-			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(1));
-			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
-			nPrior = 8;
-		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
-			for(uint32_t num=0;num<nPrior;num++){
-				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
-			}
-			break;
+		// case HOMA:
+		// 	Config::SetDefault("ns3::HomaL4Protocol::RttPackets", UintegerValue(RTTPackets));
+		// 	Config::SetDefault("ns3::HomaL4Protocol::NumTotalPrioBands", UintegerValue(8));
+		// 	Config::SetDefault("ns3::HomaL4Protocol::NumUnschedPrioBands", UintegerValue(2));
+		// 	Config::SetDefault("ns3::HomaL4Protocol::InbndRtxTimeout", TimeValue (MicroSeconds (1000)));
+		// 	Config::SetDefault("ns3::HomaL4Protocol::OutbndRtxTimeout", TimeValue (MicroSeconds (10000)));
+		// 	Config::SetDefault("ns3::HomaL4Protocol::OvercommitLevel", UintegerValue(6));
+		// 	Config::SetDefault("ns3::HomaL4Protocol::m_linkRate", DataRateValue(DataRate(LEAF_SERVER_CAPACITY )));
+		// 	Config::SetDefault("ns3::Ipv4GlobalRouting::RandomEcmpRouting", BooleanValue(true));
+		// 	Config::SetDefault("ns3::Ipv4L3Protocol::MayFragment", BooleanValue(false));
+		// 	Config::SetDefault("ns3::GenQueueDisc::HomaQueue", BooleanValue(true));
+		// 	Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(8));
+		// 	Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(0));
+		// 	Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(1));
+		// 	handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
+		// 	nPrior = 8;
+		//     cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
+		// 	for(uint32_t num=0;num<nPrior;num++){
+		// 		tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
+		// 	}
+		// 	break;
 		default:
 			std::cout << "Error in CC configuration" << std::endl;
 			return 0;
@@ -1014,49 +997,135 @@ main (int argc, char *argv[])
 	// 	tchBottleneck.AddChildQueueDisc (handle, cid[0], "ns3::FifoQueueDisc");
 	// 	tchBottleneck.AddChildQueueDisc (handle, cid[1], "ns3::RedQueueDisc");
     // }
-	
-	
-	NetDeviceContainer devicesn0nd = accessLink.Install (n0.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn0nd);
-  	NetDeviceContainer devicesn1nd = accessLink.Install (n1.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn1nd);
-	NetDeviceContainer devicesn2nd = accessLink.Install (n2.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn2nd);
-	NetDeviceContainer devicesn3nd = accessLink.Install (n3.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn3nd);
-	NetDeviceContainer devicesn4nd = accessLink.Install (n4.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn4nd);
-	NetDeviceContainer devicesn5nd = accessLink.Install (n5.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn5nd);
-	NetDeviceContainer devicesn6nd = accessLink.Install (n6.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn6nd);
-	NetDeviceContainer devicesn7nd = accessLink.Install (n7.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn7nd);
-	NetDeviceContainer devicesn8nd = accessLink.Install (n8.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn8nd);
-	NetDeviceContainer devicesn9nd = accessLink.Install (n9.Get (0), nd.Get (0));
-	tchPfifoFastAccess.Install (devicesn9nd);
-  
-	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), ns.Get (0));
-	// AnnC: [artemis-star-topology] check size here; maybe 1 or 2; could change how we install later
-	// std::cout << devicesBottleneckLink.GetN() << std::endl;
 
+
+	// AnnC: [artemis-star-topology] add in proper queue management; for now, assume droptail
+	// std::string queueDiscType = "droptail";
+	// bool dropTail = (queueDiscType == "droptail");
+	// // AnnC: [artemis-star-topology] add in max queue size for droptail
+	// uint32_t queueDiscSize = 10;
+	Ipv4AddressHelper address;
+	// address.SetBase ("192.168.0.0", "255.255.255.0");
+	address.SetBase ("10.1.0.0", "255.255.252.0");
 
 	sharedMemory = CreateObject<SharedMemoryBuffer>();
 	sharedMemory->SetAttribute("BufferSize",UintegerValue(BufferSize));
 	sharedMemory->SetSharedBufferSize(BufferSize);
 
+	int portid = 0;
 
-	QueueDiscContainer qdiscs;
+	PointToPointHelper accessLink;
+	accessLink.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
+	accessLink.SetChannelAttribute ("Delay", StringValue ("0.1ms"));
+	// AnnC: [artemis-star-topology] maybe no need to explicitly change Queue if we also have QueueDisc
+	// if (dropTail) {
+	// 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
+	// }
+	/* Server <--> Leaf */
+	for (uint32_t server=0; server<nodecontainers.GetN(); server++) {
+		NetDeviceContainer netDeviceContainer = accessLink.Install(nodecontainers.Get(server), nd.Get(0));
+		QueueDiscContainer queuedisc = tchPfifoFastAccess.Install(netDeviceContainer.Get(1));
+		bottleneckQueueDiscs.Add(queuedisc.Get(0));
+		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
+		genDisc->SetPortId(portid++);
+		// assume to be DT
+		// AnnC: [artemis-star-topology] maybe this part is not even necessary
+		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+		// AnnC: [artemis-star-topology] check whether it is right to set it to leafServerCapacity
+		genDisc->setPortBw(leafServerCapacity);
+		genDisc->SetSharedMemory(sharedMemory);
+		genDisc->SetBufferAlgorithm(DT);
+		for(uint32_t n=0;n<nPrior;n++){
+			genDisc->alphas[n] = alpha_values[n];
+		}
+		address.NewNetwork ();
+		address.Assign (netDeviceContainer);
+	}
+
+	PointToPointHelper bottleneckLink;
+	bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (LEAF_SERVER_CAPACITY)));
+	bottleneckLink.SetChannelAttribute ("Delay", TimeValue(LINK_LATENCY));
+	// if (dropTail) {
+	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
+	// }
+	/* Leaf <--> Sink */
+	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), ns.Get (0));
+	// AnnC: [artemis-star-topology] check size here; maybe 1 or 2; could change how we install later
+	// std::cout << devicesBottleneckLink.GetN() << std::endl;
+	address.NewNetwork ();
+	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
+	Ipv4InterfaceContainer nsInterface;
+  	nsInterface.Add (interfacesBottleneck.Get (1));
+
+
+	// NetDeviceContainer devicesn0nd = accessLink.Install (n0.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn0nd);
+  	// NetDeviceContainer devicesn1nd = accessLink.Install (n1.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn1nd);
+	// NetDeviceContainer devicesn2nd = accessLink.Install (n2.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn2nd);
+	// NetDeviceContainer devicesn3nd = accessLink.Install (n3.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn3nd);
+	// NetDeviceContainer devicesn4nd = accessLink.Install (n4.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn4nd);
+	// NetDeviceContainer devicesn5nd = accessLink.Install (n5.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn5nd);
+	// NetDeviceContainer devicesn6nd = accessLink.Install (n6.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn6nd);
+	// NetDeviceContainer devicesn7nd = accessLink.Install (n7.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn7nd);
+	// NetDeviceContainer devicesn8nd = accessLink.Install (n8.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn8nd);
+	// NetDeviceContainer devicesn9nd = accessLink.Install (n9.Get (0), nd.Get (0));
+	// tchPfifoFastAccess.Install (devicesn9nd);
+  
+  	
+	// address.NewNetwork ();
+	// Ipv4InterfaceContainer interfacesn0nd = address.Assign (devicesn0nd);
+	// address.NewNetwork();
+	// Ipv4InterfaceContainer interfacesn1nd = address.Assign (devicesn1nd);
+	// address.NewNetwork();
+	// Ipv4InterfaceContainer interfacesn2nd = address.Assign (devicesn2nd);
+	// address.NewNetwork();
+	// Ipv4InterfaceContainer interfacesn3nd = address.Assign (devicesn3nd);
+	// address.NewNetwork();
+	// Ipv4InterfaceContainer interfacesn4nd = address.Assign (devicesn4nd);
+	// address.NewNetwork();
+	// Ipv4InterfaceContainer interfacesn5nd = address.Assign (devicesn5nd);
+	// address.NewNetwork();
+	// Ipv4InterfaceContainer interfacesn6nd = address.Assign (devicesn6nd);
+	// address.NewNetwork();
+	// Ipv4InterfaceContainer interfacesn7nd = address.Assign (devicesn7nd);
+	// address.NewNetwork();
+	// Ipv4InterfaceContainer interfacesn8nd = address.Assign (devicesn8nd);
+	// address.NewNetwork();
+	// Ipv4InterfaceContainer interfacesn9nd = address.Assign (devicesn9nd);
+
+
+	// Ipv4InterfaceContainer n0Interface, n1Interface, n2Interface, n3Interface, n4Interface, n5Interface, n6Interface, n7Interface, n8Interface, n9Interface; 
+	// n0Interface.Add (interfacesn0nd.Get (0));
+	// n1Interface.Add (interfacesn1nd.Get (0));
+	// n2Interface.Add (interfacesn2nd.Get (0));
+	// n3Interface.Add (interfacesn3nd.Get (0));
+	// n4Interface.Add (interfacesn4nd.Get (0));
+	// n5Interface.Add (interfacesn5nd.Get (0));
+	// n6Interface.Add (interfacesn6nd.Get (0));
+	// n7Interface.Add (interfacesn7nd.Get (0));
+	// n8Interface.Add (interfacesn8nd.Get (0));
+	// n9Interface.Add (interfacesn9nd.Get (0));
+
+
 	// AnnC: [artemis-star-topology] why is it such that we do not need to install when dropTail?
 	//                               ohhh maybe if it's droptail, we dont need to install; its naturally droptail?
 	// if (!dropTail) {
 	// 	qdiscs = tc.Install (devicesBottleneckLink);
 	// }
-	qdiscs = tc.Install (devicesBottleneckLink);
+
+	
+	QueueDiscContainer qdiscs = tc.Install (devicesBottleneckLink.Get(0));
 	bottleneckQueueDiscs.Add(qdiscs.Get(0));
 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
-	genDisc->SetPortId(0);
+	genDisc->SetPortId(portid++);
 	switch(algorithm){
 		case DT:
 			genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
@@ -1116,49 +1185,6 @@ main (int argc, char *argv[])
 			return 0;
 	}
 
-  
-  	Ipv4AddressHelper address;
-	// address.SetBase ("192.168.0.0", "255.255.255.0");
-	address.SetBase ("10.1.0.0", "255.255.252.0");
-	address.NewNetwork ();
-	Ipv4InterfaceContainer interfacesn0nd = address.Assign (devicesn0nd);
-	address.NewNetwork();
-	Ipv4InterfaceContainer interfacesn1nd = address.Assign (devicesn1nd);
-	address.NewNetwork();
-	Ipv4InterfaceContainer interfacesn2nd = address.Assign (devicesn2nd);
-	address.NewNetwork();
-	Ipv4InterfaceContainer interfacesn3nd = address.Assign (devicesn3nd);
-	address.NewNetwork();
-	Ipv4InterfaceContainer interfacesn4nd = address.Assign (devicesn4nd);
-	address.NewNetwork();
-	Ipv4InterfaceContainer interfacesn5nd = address.Assign (devicesn5nd);
-	address.NewNetwork();
-	Ipv4InterfaceContainer interfacesn6nd = address.Assign (devicesn6nd);
-	address.NewNetwork();
-	Ipv4InterfaceContainer interfacesn7nd = address.Assign (devicesn7nd);
-	address.NewNetwork();
-	Ipv4InterfaceContainer interfacesn8nd = address.Assign (devicesn8nd);
-	address.NewNetwork();
-	Ipv4InterfaceContainer interfacesn9nd = address.Assign (devicesn9nd);
-	address.NewNetwork ();
-	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
-
-
-	Ipv4InterfaceContainer n0Interface, n1Interface, n2Interface, n3Interface, n4Interface, n5Interface, n6Interface, n7Interface, n8Interface, n9Interface; 
-	n0Interface.Add (interfacesn0nd.Get (0));
-	n1Interface.Add (interfacesn1nd.Get (0));
-	n2Interface.Add (interfacesn2nd.Get (0));
-	n3Interface.Add (interfacesn3nd.Get (0));
-	n4Interface.Add (interfacesn4nd.Get (0));
-	n5Interface.Add (interfacesn5nd.Get (0));
-	n6Interface.Add (interfacesn6nd.Get (0));
-	n7Interface.Add (interfacesn7nd.Get (0));
-	n8Interface.Add (interfacesn8nd.Get (0));
-	n9Interface.Add (interfacesn9nd.Get (0));
-
-	Ipv4InterfaceContainer nsInterface;
-  	nsInterface.Add (interfacesBottleneck.Get (1));
-
 
 	// AnnC: [artemis-star-topology] pass in flowsPacketsSize as a parameter
 	uint32_t flowsPacketsSize = 1000;
@@ -1194,7 +1220,8 @@ main (int argc, char *argv[])
   	BulkSendHelper bulkSendHelperUp ("ns3::TcpSocketFactory", Address ());
   	bulkSendHelperUp.SetAttribute ("Remote", AddressValue (socketAddressUp));
 
-  	NodeContainer nodecontainers[numNodes] = {n0, n1, n2, n3, n4, n5, n6, n7, n8, n9};
+	//AnnC: [artemis-star-topology] priority not set
+
   	uint64_t allflows = 0;
   	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
@@ -1204,7 +1231,7 @@ main (int argc, char *argv[])
 		while (flowSize == 0) { flowSize = gen_random_cdf(cdfTable); }
 		allflows += flowSize;
 		bulkSendHelperUp.SetAttribute ("MaxBytes", UintegerValue (flowSize));
-		sourceApps.Add (bulkSendHelperUp.Install (nodecontainers[i]));
+		sourceApps.Add (bulkSendHelperUp.Install (nodecontainers.Get(i)));
 		// AnnC: [artemis-star-topology] in ABM, the request rate (0.2 here) is calculated instead
 		double startTime = poission_gen_interval(0.2);
 		std::cout << startTime << std::endl;
