@@ -789,8 +789,9 @@ main (int argc, char *argv[])
 	stack.SetRoutingHelper (globalRoutingHelper);
 
 
-	TrafficControlHelper tchPfifoFastAccess;
-	tchPfifoFastAccess.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("1000p"));
+	//TrafficControlHelper tchPfifoFastAccess;
+	//tchPfifoFastAccess.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize", StringValue ("1000p"));
+	//tchPfifoFastAccess.SetRootQueueDisc ("ns3::GenQueueDisc");
 
 	TrafficControlHelper tc;
     uint16_t handle;
@@ -965,6 +966,7 @@ main (int argc, char *argv[])
 			std::cout << "Error in CC configuration" << std::endl;
 			return 0;
     }
+    std::cout << "done configuring CC" << std::endl;
 
 	// AnnC: [artemis-star-topology] add in this part later; the CC part above has already SetRootQueueDisc to GenQueueDisc
     // if (queueDiscType.compare ("PfifoFast") == 0)
@@ -1022,6 +1024,8 @@ main (int argc, char *argv[])
 
 	int portid = 0;
 
+	std::cout << "checkpoint0" << std::endl;
+
 	PointToPointHelper accessLink;
 	accessLink.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
 	accessLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(serverLeafLinkLatency)));
@@ -1030,12 +1034,24 @@ main (int argc, char *argv[])
 	// 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
 	// }
 	/* Server <--> Leaf */
+	std::cout << "nodecontainers.GetN()=" << nodecontainers.GetN() << std::endl;
 	for (uint32_t server=0; server<nodecontainers.GetN(); server++) {
+		std::cout << server << std::endl;
 		NetDeviceContainer netDeviceContainer = accessLink.Install(nodecontainers.Get(server), nd.Get(0));
-		QueueDiscContainer queuedisc = tchPfifoFastAccess.Install(netDeviceContainer.Get(1));
+		std::cout << "netDeviceContainer.GetN()=" << netDeviceContainer.GetN() << std::endl;
+		std::cout << "netd0 " << netDeviceContainer.Get(0) << std::endl;
+		std::cout << "netd1 " << netDeviceContainer.Get(1) << std::endl;
+		// QueueDiscContainer queuedisc = tchPfifoFastAccess.Install(netDeviceContainer.Get(1));
+		QueueDiscContainer queuedisc = tc.Install(netDeviceContainer.Get(1));
+		std::cout << "queuedisc.getN()=" << queuedisc.GetN() << std::endl;
 		bottleneckQueueDiscs.Add(queuedisc.Get(0));
 		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
+		std::cout << queuedisc.Get(0) << " queuedisc0" << std::endl;
+		std::cout << portid << "before" << std::endl;
+		std::cout << genDisc << std::endl;
 		genDisc->SetPortId(portid++);
+		std::cout << "after" << std::endl;
+		std::cout << portid << "after" << std::endl;
 		// assume to be DT
 		// AnnC: [artemis-star-topology] maybe this part is not even necessary
 		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
@@ -1049,6 +1065,8 @@ main (int argc, char *argv[])
 		address.Assign (netDeviceContainer);
 	}
 
+	std::cout << "done with server<->leaf links" << std::endl;
+
 	PointToPointHelper bottleneckLink;
 	bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
 	bottleneckLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatency)));
@@ -1058,11 +1076,9 @@ main (int argc, char *argv[])
 	/* Leaf <--> Sink */
 	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), ns.Get (0));
 	// AnnC: [artemis-star-topology] check size here; maybe 1 or 2; could change how we install later
-	std::cout << devicesBottleneckLink.GetN() << std::endl;
-	address.NewNetwork ();
-	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
-	Ipv4InterfaceContainer nsInterface;
-  	nsInterface.Add (interfacesBottleneck.Get (1));
+	std::cout << "bottleneck netdevice " << devicesBottleneckLink.GetN() << std::endl;
+	std::cout << "net0 " << devicesBottleneckLink.Get(0) << std::endl;
+	std::cout << "net1 " << devicesBottleneckLink.Get(1) << std::endl;
 
 
 	// NetDeviceContainer devicesn0nd = accessLink.Install (n0.Get (0), nd.Get (0));
@@ -1128,6 +1144,7 @@ main (int argc, char *argv[])
 	// 	qdiscs = tc.Install (devicesBottleneckLink);
 	// }
 
+	std::cout << "checkpoint1" << std::endl;
 	
 	QueueDiscContainer qdiscs = tc.Install (devicesBottleneckLink.Get(0));
 	bottleneckQueueDiscs.Add(qdiscs.Get(0));
@@ -1177,6 +1194,11 @@ main (int argc, char *argv[])
 			std::cout << "Error in buffer management configuration. Exiting!";
 			return 0;
 	}
+
+	address.NewNetwork ();
+	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
+	Ipv4InterfaceContainer nsInterface;
+  	nsInterface.Add (interfacesBottleneck.Get (1));
 
 
 	// AnnC: [artemis-star-topology] pass in flowsPacketsSize as a parameter
