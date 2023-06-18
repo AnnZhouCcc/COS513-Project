@@ -502,6 +502,8 @@ main (int argc, char *argv[])
   	nsInterface.Add (interfacesBottleneck.Get (1));
 
 
+	std::cout << "start installing applications" << std::endl;
+
 	// Install applications
 	NS_LOG_INFO ("Initialize CDF table");
 	struct cdf_table* cdfTable = new cdf_table ();
@@ -519,31 +521,29 @@ main (int argc, char *argv[])
 	sinkApps.Start (Seconds (0));
 	sinkApps.Stop  (Seconds (END_TIME));
 
+	InetSocketAddress socketAddressUp = InetSocketAddress (nsInterface.GetAddress (0), port);
+	BulkSendHelper bulkSendHelperUp ("ns3::TcpSocketFactory", Address ());
+	bulkSendHelperUp.SetAttribute ("Remote", AddressValue (socketAddressUp));
+	//AnnC: [artemis-star-topology] Priority not set.
+
 	uint64_t allflows = 0;
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
+	ApplicationContainer sourceApps;
 	for (int i = 0; i < numNodes; i++) {
+		std::cout << "node " << i << std::endl;
 		double startTime = START_TIME + poission_gen_interval(0.2);
-		while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME) {
-			// std::cout << startTime << std::endl;
-			ApplicationContainer sourceApps;
-			InetSocketAddress socketAddressUp = InetSocketAddress (nsInterface.GetAddress (0), port);
-			BulkSendHelper bulkSendHelperUp ("ns3::TcpSocketFactory", Address ());
-			bulkSendHelperUp.SetAttribute ("Remote", AddressValue (socketAddressUp));
-			//AnnC: [artemis-star-topology] Priority not set.
-  	
-			// uint64_t flowSize = 1000000000000;
-			uint64_t flowSize = gen_random_cdf(cdfTable);
-			while (flowSize == 0) { flowSize = gen_random_cdf(cdfTable); }
-			allflows += flowSize;
-			bulkSendHelperUp.SetAttribute ("MaxBytes", UintegerValue (flowSize));
-			sourceApps.Add (bulkSendHelperUp.Install (nodecontainers.Get(i)));
-			sourceApps.Get(i)->SetStartTime (Seconds (startTime));
-			sourceApps.Stop (Seconds (END_TIME - 0.1));
-
-			startTime += poission_gen_interval(0.2);
-		}
+		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) startTime = poission_gen_interval(0.2);
+		std::cout << startTime << std::endl;
+  		// uint64_t flowSize = 1000000000000;
+		uint64_t flowSize = gen_random_cdf(cdfTable);
+		while (flowSize == 0) { flowSize = gen_random_cdf(cdfTable); }
+		allflows += flowSize;
+		bulkSendHelperUp.SetAttribute ("MaxBytes", UintegerValue (flowSize));
+		sourceApps.Add (bulkSendHelperUp.Install (nodecontainers.Get(i)));
+		sourceApps.Get(i)->SetStartTime (Seconds (startTime));
 	}
+	sourceApps.Stop (Seconds (END_TIME - 0.1));
 
 
 	Simulator::Schedule(Seconds(START_TIME),StarTopologyInvokeToRStats,torStats, BufferSize, printDelay, nPrior);
