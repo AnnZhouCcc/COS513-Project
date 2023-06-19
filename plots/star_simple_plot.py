@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 dir = "/u/az6922/data/"
-file = dir + "tor-single-2-101-0.stat"
+file = dir + "tor-single-2-101-3.stat"
 
 #df = pd.read_csv(file, delim_whitespace=True)
 
@@ -94,6 +94,8 @@ def plot_generic(numqueues, offset, name):
 				qsize_list_arr[i].append(int(array[3+5*i+offset]))
 
 	#plt.plot(time_list,buffer_list,label="occupied buffer")
+	#for i in range(3,4):
+	#	plt.plot(time_list[1572790:1572795],qsize_list_arr[i][1572790:1572795],label="port"+str(i)+" "+name,marker=".")
 	for i in range(numqueues):
 		plt.plot(time_list,qsize_list_arr[i],label="port"+str(i)+" "+name)
 	plt.title(name+" of all ports over time")
@@ -102,4 +104,6 @@ def plot_generic(numqueues, offset, name):
 
 
 if __name__ == "__main__":
-	plot_generic(10,3,"droppedbytes")
+	#plot_generic(10,3,"droppedbytes")
+	plot_generic(10,2,"sentbytes")
+	#plot_all(11)

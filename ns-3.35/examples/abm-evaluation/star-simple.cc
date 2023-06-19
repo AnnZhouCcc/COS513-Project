@@ -531,13 +531,12 @@ main (int argc, char *argv[])
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	ApplicationContainer sourceApps;
 	for (int i = 0; i < numNodes; i++) {
-		std::cout << "node " << i << std::endl;
 		double startTime = START_TIME + poission_gen_interval(0.2);
 		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) startTime = poission_gen_interval(0.2);
-		std::cout << startTime << std::endl;
-  		// uint64_t flowSize = 1000000000000;
-		uint64_t flowSize = gen_random_cdf(cdfTable);
+  		uint64_t flowSize = 1000000000000;
+		//uint64_t flowSize = gen_random_cdf(cdfTable);
 		while (flowSize == 0) { flowSize = gen_random_cdf(cdfTable); }
+		std::cout << "node " << i << ": startTime=" << startTime << ", flowSize=" << flowSize << std::endl;
 		allflows += flowSize;
 		bulkSendHelperUp.SetAttribute ("MaxBytes", UintegerValue (flowSize));
 		sourceApps.Add (bulkSendHelperUp.Install (nodecontainers.Get(i)));

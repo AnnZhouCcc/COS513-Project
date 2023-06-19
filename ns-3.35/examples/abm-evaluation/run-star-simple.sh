@@ -67,7 +67,7 @@ cd $NS3
 
 TCP=$DCTCP
 ALG=$DT
-N=0
+N=3
 
 # for LOAD in 0.9 ;do
 # 	FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ.fct"
