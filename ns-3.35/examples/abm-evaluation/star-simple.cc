@@ -56,12 +56,12 @@ extern "C"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("STAR_SIMPLE");
+NS_LOG_COMPONENT_DEFINE ("STAR_BURST_TOLERANCE");
 
 double alpha_values[8]={1};
 
-// Ptr<OutputStreamWrapper> fctOutput;
-// AsciiTraceHelper asciiTraceHelper;
+Ptr<OutputStreamWrapper> fctOutput;
+AsciiTraceHelper asciiTraceHelper;
 
 Ptr<OutputStreamWrapper> torStats;
 AsciiTraceHelper torTraceHelper;
@@ -108,6 +108,29 @@ void StarTopologyInvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t Buffer
 	*stream->GetStream() << std::endl;
 
 	Simulator::Schedule(NanoSeconds(nanodelay), StarTopologyInvokeToRStats, stream, BufferSize, nanodelay, nPrior);
+}
+
+
+double baseRTTNano;
+// double nicBw;
+void TraceMsgFinish (Ptr<OutputStreamWrapper> stream, double size, double start, bool incast,uint32_t prior )
+{
+  double fct, standalone_fct,slowdown;
+	fct = Simulator::Now().GetNanoSeconds()- start;
+	// standalone_fct = baseRTTNano + size*8.0/ nicBw;
+	// slowdown = fct/standalone_fct;
+
+	*stream->GetStream ()
+	<< Simulator::Now().GetNanoSeconds()
+  	<< " " << size
+  	<< " " << fct
+  	// << " " << standalone_fct
+  	// << " " << slowdown
+  	<< " " << baseRTTNano/1e3
+  	<< " " << (start/1e3- Seconds(10).GetMicroSeconds())
+	<< " " << prior
+	<< " " << incast
+	<< std::endl;
 }
 
 
@@ -171,8 +194,8 @@ main (int argc, char *argv[])
 	uint32_t printDelay= 1e3;
 	cmd.AddValue("printDelay","printDelay in NanoSeconds", printDelay);
 
-	// std::string fctOutFile="./fcts.txt";
-	// cmd.AddValue ("fctOutFile", "File path for FCTs", fctOutFile);
+	std::string fctOutFile="./fcts.txt";
+	cmd.AddValue ("fctOutFile", "File path for FCTs", fctOutFile);
 
 	std::string torOutFile="./tor.txt";
 	cmd.AddValue ("torOutFile", "File path for ToR statistic", torOutFile);
@@ -186,33 +209,35 @@ main (int argc, char *argv[])
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
-	// fctOutput = asciiTraceHelper.CreateFileStream (fctOutFile);
+	int numNodes = 10;
 
-	// *fctOutput->GetStream ()
-	// << "time "
-  	// << "flowsize "
-  	// << "fct "
+	fctOutput = asciiTraceHelper.CreateFileStream (fctOutFile);
+
+	*fctOutput->GetStream ()
+	<< "time "
+  	<< "flowsize "
+  	<< "fct "
   	// << "basefct "
   	// << "slowdown "
-  	// << "basertt "
-  	// <<  "flowstart "
-	// << "priority "
-	// << "incast "
-	// << std::endl;
+  	<< "basertt "
+  	<< "flowstart "
+	<< "priority "
+	<< "incast "
+	<< std::endl;
 
 	torStats = torTraceHelper.CreateFileStream (torOutFile);
 	*torStats->GetStream ()
 	<< "time "
 	<< "bufferSizeMB "
 	<< "occupiedBufferPct";
-	for (int i=0; i<numSinks; i++) {
+	for (int i=0; i<(numSinks+numNodes); i++) {
 		for (int j=0; j<nPrior; j++) {
-			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_qSize";
+			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_qSize";
 			// AnnC: [artemis-star-topology] How is this threshold not throughput?
-			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_threshold";
-			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_sentBytes";
-			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_droppedBytes";
-			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_maxSize";
+			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_threshold";
+			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_sentBytes";
+			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_droppedBytes";
+			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_maxSize";
 		}
 	}
 	*torStats->GetStream () << std::endl;
@@ -250,6 +275,8 @@ main (int argc, char *argv[])
 	// AnnC: [artemis-star-topology] Uncertain what the calculation is for.
 	double RTTBytes = (serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatency)*2*1e3/8;
 	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
+	baseRTTNano = (serverLeafLinkLatency+leafSinkLinkLatency)*2*1e3;
+	// nicBw = serverLeafCapacity+leafSinkCapacity;
 
     // Config::SetDefault("ns3::GenQueueDisc::updateInterval", UintegerValue(alphaUpdateInterval*linkLatency*8*1000));
     Config::SetDefault("ns3::GenQueueDisc::staticBuffer", UintegerValue(staticBuffer));
@@ -276,7 +303,6 @@ main (int argc, char *argv[])
 	/* Reference: https://github.com/netsyn-princeton/cc-aqm-bm-ns3 */
 	/****************************************************************/
 
-	int numNodes = 10;
 	NodeContainer nodecontainers;
 	nodecontainers.Create(numNodes);
 	NodeContainer nd;
@@ -572,6 +598,7 @@ main (int argc, char *argv[])
 		sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
 		sinkApp.Start(Seconds(0));
 		sinkApp.Stop(Seconds(END_TIME));
+		sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
 
 		portnumber++;
 	}
