@@ -79,6 +79,13 @@ double poission_gen_interval(double avg_rate)
 }
 
 
+template<typename T>
+T rand_range (T min, T max)
+{
+    return min + ((double)max - min) * rand () / RAND_MAX;
+}
+
+
 void StarTopologyInvokeToRStats(Ptr<OutputStreamWrapper> stream, uint32_t BufferSize, double nanodelay, uint32_t nPrior){
 
 	int64_t currentNanoSeconds = Simulator::Now().GetNanoSeconds();
@@ -173,6 +180,9 @@ main (int argc, char *argv[])
 	uint32_t rto = 10*1000; // in MicroSeconds, 5 milliseconds.
 	cmd.AddValue ("rto", "min Retransmission timeout value in MicroSeconds", rto);
 
+	uint32_t numSinks = 1;
+	cmd.AddValue ("numSinks", "number of sinks", numSinks);
+
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
@@ -195,8 +205,6 @@ main (int argc, char *argv[])
 	<< "time "
 	<< "bufferSizeMB "
 	<< "occupiedBufferPct";
-	// AnnC: [artemis-star-topology] numSinks hard-coded for now.
-	int numSinks = 1;
 	for (int i=0; i<numSinks; i++) {
 		for (int j=0; j<nPrior; j++) {
 			*torStats->GetStream () << " sink_" << i << "_queue_" << j <<"_qSize";
@@ -271,9 +279,10 @@ main (int argc, char *argv[])
 	int numNodes = 10;
 	NodeContainer nodecontainers;
 	nodecontainers.Create(numNodes);
-	NodeContainer nd, ns; 
+	NodeContainer nd;
 	nd.Create (1);
-	ns.Create (1);
+	NodeContainer sinkcontainers; 
+	sinkcontainers.Create(numSinks);
 
 	InternetStackHelper stack;
 	stack.InstallAll ();
@@ -446,60 +455,62 @@ main (int argc, char *argv[])
 	// }
 
 	/* Leaf <--> Sink */
-	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), ns.Get (0));
-	QueueDiscContainer qdiscs = tc.Install (devicesBottleneckLink.Get(0));
-	bottleneckQueueDiscs.Add(qdiscs.Get(0));
-	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
-	genDisc->SetPortId(portid++);
-	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-	genDisc->setPortBw(leafSinkCapacity);
-	genDisc->SetSharedMemory(sharedMemory);
-	switch(algorithm){
-		case DT:
-			genDisc->SetBufferAlgorithm(DT);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
-			}
-			break;
-		case FAB:
-			genDisc->SetBufferAlgorithm(FAB);
-			genDisc->SetFabWindow(MicroSeconds(5000));
-			genDisc->SetFabThreshold(15*PACKET_SIZE);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
-			}
-			break;
-		case CS:
-			genDisc->SetBufferAlgorithm(CS);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
-			}
-			break;
-		case IB:
-			genDisc->SetBufferAlgorithm(IB);
-			genDisc->SetAfdWindow(MicroSeconds(50));
-			genDisc->SetDppWindow(MicroSeconds(5000));
-			genDisc->SetDppThreshold(RTTPackets);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
-				genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
-			}
-			break;
-		case ABM:
-			genDisc->SetBufferAlgorithm(ABM);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
-			}
-			break;
-		default:
-			std::cout << "Error in buffer management configuration. Exiting!";
-			return 0;
-	}
-
-	address.NewNetwork ();
-	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
 	Ipv4InterfaceContainer nsInterface;
-  	nsInterface.Add (interfacesBottleneck.Get (1));
+	for (uint32_t sink=0; sink<numSinks; sink++) {
+		NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), sinkcontainers.Get (sink));
+		QueueDiscContainer qdiscs = tc.Install (devicesBottleneckLink.Get(0));
+		bottleneckQueueDiscs.Add(qdiscs.Get(0));
+		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
+		genDisc->SetPortId(portid++);
+		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+		genDisc->setPortBw(leafSinkCapacity);
+		genDisc->SetSharedMemory(sharedMemory);
+		switch(algorithm){
+			case DT:
+				genDisc->SetBufferAlgorithm(DT);
+				for(uint32_t n=0;n<nPrior;n++){
+					genDisc->alphas[n] = alpha_values[n];
+				}
+				break;
+			case FAB:
+				genDisc->SetBufferAlgorithm(FAB);
+				genDisc->SetFabWindow(MicroSeconds(5000));
+				genDisc->SetFabThreshold(15*PACKET_SIZE);
+				for(uint32_t n=0;n<nPrior;n++){
+					genDisc->alphas[n] = alpha_values[n];
+				}
+				break;
+			case CS:
+				genDisc->SetBufferAlgorithm(CS);
+				for(uint32_t n=0;n<nPrior;n++){
+					genDisc->alphas[n] = alpha_values[n];
+				}
+				break;
+			case IB:
+				genDisc->SetBufferAlgorithm(IB);
+				genDisc->SetAfdWindow(MicroSeconds(50));
+				genDisc->SetDppWindow(MicroSeconds(5000));
+				genDisc->SetDppThreshold(RTTPackets);
+				for(uint32_t n=0;n<nPrior;n++){
+					genDisc->alphas[n] = alpha_values[n];
+					genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
+				}
+				break;
+			case ABM:
+				genDisc->SetBufferAlgorithm(ABM);
+				for(uint32_t n=0;n<nPrior;n++){
+					genDisc->alphas[n] = alpha_values[n];
+				}
+				break;
+			default:
+				std::cout << "Error in buffer management configuration. Exiting!";
+				return 0;
+		}
+
+		address.NewNetwork ();
+		Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
+		nsInterface.Add (interfacesBottleneck.Get (1));
+	}
 
 
 	std::cout << "start installing applications" << std::endl;
@@ -510,39 +521,60 @@ main (int argc, char *argv[])
 	init_cdf (cdfTable);
 	load_cdf (cdfTable, cdfFileName.c_str ());
 
-	// AnnC: [artemis-star-topology] Is it right to fix a port number?
-	uint16_t port = 9;
-	ApplicationContainer sinkApps;
-	// Configure and install upload flow
-	Address addUp (InetSocketAddress (Ipv4Address::GetAny (), port));
-	PacketSinkHelper sinkHelperUp ("ns3::TcpSocketFactory", addUp);
-	sinkHelperUp.SetAttribute ("Protocol", TypeIdValue (TcpSocketFactory::GetTypeId ()));
-	sinkApps.Add (sinkHelperUp.Install (ns));
-	sinkApps.Start (Seconds (0));
-	sinkApps.Stop  (Seconds (END_TIME));
-
-	InetSocketAddress socketAddressUp = InetSocketAddress (nsInterface.GetAddress (0), port);
-	BulkSendHelper bulkSendHelperUp ("ns3::TcpSocketFactory", Address ());
-	bulkSendHelperUp.SetAttribute ("Remote", AddressValue (socketAddressUp));
-	//AnnC: [artemis-star-topology] Priority not set.
-
-	uint64_t allflows = 0;
+	uint32_t nodetosink[numNodes] = {0,0,1,1,1,1,1,1,1,1};
+	uint32_t portnumber = 9;
+	uint32_t flowcount = 0;
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
-	ApplicationContainer sourceApps;
-	for (int i = 0; i < numNodes; i++) {
+	for (uint32_t node=0; node<numNodes; node++) {
 		double startTime = START_TIME + poission_gen_interval(0.2);
-		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) startTime = poission_gen_interval(0.2);
-  		uint64_t flowSize = 1000000000000;
-		//uint64_t flowSize = gen_random_cdf(cdfTable);
-		while (flowSize == 0) { flowSize = gen_random_cdf(cdfTable); }
-		std::cout << "node " << i << ": startTime=" << startTime << ", flowSize=" << flowSize << std::endl;
-		allflows += flowSize;
-		bulkSendHelperUp.SetAttribute ("MaxBytes", UintegerValue (flowSize));
-		sourceApps.Add (bulkSendHelperUp.Install (nodecontainers.Get(i)));
-		sourceApps.Get(i)->SetStartTime (Seconds (startTime));
+		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+			startTime = START_TIME + poission_gen_interval(0.2);
+		}
+
+		// uint64_t flowSize = 1000000000000;
+		uint64_t flowSize = gen_random_cdf(cdfTable);
+		while (flowSize == 0) { 
+			flowSize = gen_random_cdf(cdfTable); 
+		}
+
+		// ACK packets are prioritized
+		uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
+
+		uint32_t sink = nodetosink[node];
+		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
+		Address sinkAddress(ad);
+
+		std::cout << "Sending from node " << node << " to sink " << sink << ": ";
+		std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
+
+		Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+		bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+		bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
+		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+        bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+		bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
+		bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
+		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
+		bulksend->SetStartTime (Seconds(startTime));
+        bulksend->SetStopTime (Seconds (END_TIME));
+		nodecontainers.Get(node)->AddApplication(bulksend);
+
+		PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
+		ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
+		sinkApp.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+		sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+		sinkApp.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
+		sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
+		// ACK packets are prioritized
+		sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
+		sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
+		sinkApp.Start(Seconds(0));
+		sinkApp.Stop(Seconds(END_TIME));
+
+		portnumber++;
 	}
-	sourceApps.Stop (Seconds (END_TIME - 0.1));
 
 
 	Simulator::Schedule(Seconds(START_TIME),StarTopologyInvokeToRStats,torStats, BufferSize, printDelay, nPrior);
