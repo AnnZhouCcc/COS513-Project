@@ -126,8 +126,8 @@ void TraceMsgFinish (Ptr<OutputStreamWrapper> stream, double size, double start,
   	<< " " << fct
   	// << " " << standalone_fct
   	// << " " << slowdown
-  	<< " " << baseRTTNano/1e3
-  	<< " " << (start/1e3- Seconds(10).GetMicroSeconds())
+  	<< " " << baseRTTNano
+  	<< " " << start
 	<< " " << prior
 	<< " " << incast
 	<< std::endl;
