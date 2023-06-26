@@ -484,46 +484,46 @@ main (int argc, char *argv[])
 	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), sinkcontainers.Get (sink));
 	QueueDiscContainer qdiscs = tc0.Install (devicesBottleneckLink.Get(0));
 	bottleneckQueueDiscs.Add(qdiscs.Get(0));
-	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
-	genDisc->SetPortId(portid++);
-	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-	genDisc->setPortBw(leafSinkCapacity);
-	genDisc->SetSharedMemory(sharedMemory);
+	Ptr<GenQueueDisc> genDisc0 = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
+	genDisc0->SetPortId(portid++);
+	genDisc0->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	genDisc0->setPortBw(leafSinkCapacity);
+	genDisc0->SetSharedMemory(sharedMemory);
 	switch(algorithm){
 		case DT:
-			genDisc->SetBufferAlgorithm(DT);
+			genDisc0->SetBufferAlgorithm(DT);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
+				genDisc0->alphas[n] = alpha_values[n];
 			}
 			break;
 		case FAB:
-			genDisc->SetBufferAlgorithm(FAB);
-			genDisc->SetFabWindow(MicroSeconds(5000));
-			genDisc->SetFabThreshold(15*PACKET_SIZE);
+			genDisc0->SetBufferAlgorithm(FAB);
+			genDisc0->SetFabWindow(MicroSeconds(5000));
+			genDisc0->SetFabThreshold(15*PACKET_SIZE);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
+				genDisc0->alphas[n] = alpha_values[n];
 			}
 			break;
 		case CS:
-			genDisc->SetBufferAlgorithm(CS);
+			genDisc0->SetBufferAlgorithm(CS);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
+				genDisc0->alphas[n] = alpha_values[n];
 			}
 			break;
 		case IB:
-			genDisc->SetBufferAlgorithm(IB);
-			genDisc->SetAfdWindow(MicroSeconds(50));
-			genDisc->SetDppWindow(MicroSeconds(5000));
-			genDisc->SetDppThreshold(RTTPackets);
+			genDisc0->SetBufferAlgorithm(IB);
+			genDisc0->SetAfdWindow(MicroSeconds(50));
+			genDisc0->SetDppWindow(MicroSeconds(5000));
+			genDisc0->SetDppThreshold(RTTPackets);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
-				genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
+				genDisc0->alphas[n] = alpha_values[n];
+				genDisc0->SetQrefAfd(n,uint32_t(RTTBytes));
 			}
 			break;
 		case ABM:
-			genDisc->SetBufferAlgorithm(ABM);
+			genDisc0->SetBufferAlgorithm(ABM);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
+				genDisc0->alphas[n] = alpha_values[n];
 			}
 			break;
 		default:
@@ -548,18 +548,20 @@ main (int argc, char *argv[])
 	uint32_t flowcount = 0;
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
-	uint32_t node = 0;
-	uint32_t sink = 0;
-	double startTime = START_TIME + poission_gen_interval(0.2);
-	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
-		startTime = START_TIME + poission_gen_interval(0.2);
-	}
+	// uint32_t node = 0;
+	// uint32_t sink = 0;
 
-	// uint64_t flowSize = 1000000000000;
-	uint64_t flowSize = gen_random_cdf(cdfTable);
-	while (flowSize == 0) { 
-		flowSize = gen_random_cdf(cdfTable); 
-	}
+	double startTime = START_TIME + 1;
+	// double startTime = START_TIME + poission_gen_interval(0.2);
+	// while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+	// 	startTime = START_TIME + poission_gen_interval(0.2);
+	// }
+
+	uint64_t flowSize = 1000000000000;
+	// uint64_t flowSize = gen_random_cdf(cdfTable);
+	// while (flowSize == 0) { 
+	// 	flowSize = gen_random_cdf(cdfTable); 
+	// }
 
 	// ACK packets are prioritized
 	uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
@@ -567,7 +569,7 @@ main (int argc, char *argv[])
 	InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
 	Address sinkAddress(ad);
 
-	std::cout << "Sending from node " << node << " to sink " << sink << ": ";
+	std::cout << "Sending from server " << server << " to sink " << sink << ": ";
 	std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
 
 	Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
@@ -581,7 +583,7 @@ main (int argc, char *argv[])
 	bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 	bulksend->SetStartTime (Seconds(startTime));
 	bulksend->SetStopTime (Seconds (END_TIME));
-	nodecontainers.Get(node)->AddApplication(bulksend);
+	nodecontainers.Get(server)->AddApplication(bulksend);
 
 	PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
 	ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
@@ -728,24 +730,24 @@ main (int argc, char *argv[])
 	// }
 
 	/* Server1 <--> Leaf */
-	uint32_t server=1;
-	NetDeviceContainer netDeviceContainer = accessLink.Install(nodecontainers.Get(server), nd.Get(0));
-	QueueDiscContainer queuedisc = tc1.Install(netDeviceContainer.Get(1));
-	bottleneckQueueDiscs.Add(queuedisc.Get(0));
-	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
-	genDisc->SetPortId(portid++);
+	server=1;
+	NetDeviceContainer netDeviceContainer1 = accessLink.Install(nodecontainers.Get(server), nd.Get(0));
+	QueueDiscContainer queuedisc1 = tc1.Install(netDeviceContainer1.Get(1));
+	bottleneckQueueDiscs.Add(queuedisc1.Get(0));
+	Ptr<GenQueueDisc> genDisc1 = DynamicCast<GenQueueDisc> (queuedisc1.Get(0));
+	genDisc1->SetPortId(portid++);
 	std::cout << "after" << std::endl;
 	std::cout << portid << "after" << std::endl;
 	// AnnC: [artemis-star-topology] Assume to be DT.
-	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-	genDisc->setPortBw(serverLeafCapacity);
-	genDisc->SetSharedMemory(sharedMemory);
-	genDisc->SetBufferAlgorithm(DT);
+	genDisc1->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	genDisc1->setPortBw(serverLeafCapacity);
+	genDisc1->SetSharedMemory(sharedMemory);
+	genDisc1->SetBufferAlgorithm(DT);
 	for(uint32_t n=0;n<nPrior;n++){
-		genDisc->alphas[n] = alpha_values[n];
+		genDisc1->alphas[n] = alpha_values[n];
 	}
 	address.NewNetwork ();
-	address.Assign (netDeviceContainer);
+	address.Assign (netDeviceContainer1);
 
 	std::cout << "done with server1<->leaf links" << std::endl;
 
@@ -758,51 +760,51 @@ main (int argc, char *argv[])
 	// }
 
 	/* Leaf <--> Sink1 */
-	Ipv4InterfaceContainer nsInterface;
-	uint32_t sink = 1;
-	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), sinkcontainers.Get (sink));
-	QueueDiscContainer qdiscs = tc1.Install (devicesBottleneckLink.Get(0));
-	bottleneckQueueDiscs.Add(qdiscs.Get(0));
-	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
-	genDisc->SetPortId(portid++);
-	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-	genDisc->setPortBw(leafSinkCapacity);
-	genDisc->SetSharedMemory(sharedMemory);
+	Ipv4InterfaceContainer nsInterface1;
+	sink = 1;
+	NetDeviceContainer devicesBottleneckLink1 = bottleneckLink.Install (nd.Get (0), sinkcontainers.Get (sink));
+	QueueDiscContainer qdiscs1 = tc1.Install (devicesBottleneckLink1.Get(0));
+	bottleneckQueueDiscs.Add(qdiscs1.Get(0));
+	Ptr<GenQueueDisc> genDisc11 = DynamicCast<GenQueueDisc> (qdiscs1.Get(0));
+	genDisc11->SetPortId(portid++);
+	genDisc11->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	genDisc11->setPortBw(leafSinkCapacity);
+	genDisc11->SetSharedMemory(sharedMemory);
 	switch(algorithm){
 		case DT:
-			genDisc->SetBufferAlgorithm(DT);
+			genDisc11->SetBufferAlgorithm(DT);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
+				genDisc11->alphas[n] = alpha_values[n];
 			}
 			break;
 		case FAB:
-			genDisc->SetBufferAlgorithm(FAB);
-			genDisc->SetFabWindow(MicroSeconds(5000));
-			genDisc->SetFabThreshold(15*PACKET_SIZE);
+			genDisc11->SetBufferAlgorithm(FAB);
+			genDisc11->SetFabWindow(MicroSeconds(5000));
+			genDisc11->SetFabThreshold(15*PACKET_SIZE);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
+				genDisc11->alphas[n] = alpha_values[n];
 			}
 			break;
 		case CS:
-			genDisc->SetBufferAlgorithm(CS);
+			genDisc11->SetBufferAlgorithm(CS);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
+				genDisc11->alphas[n] = alpha_values[n];
 			}
 			break;
 		case IB:
-			genDisc->SetBufferAlgorithm(IB);
-			genDisc->SetAfdWindow(MicroSeconds(50));
-			genDisc->SetDppWindow(MicroSeconds(5000));
-			genDisc->SetDppThreshold(RTTPackets);
+			genDisc11->SetBufferAlgorithm(IB);
+			genDisc11->SetAfdWindow(MicroSeconds(50));
+			genDisc11->SetDppWindow(MicroSeconds(5000));
+			genDisc11->SetDppThreshold(RTTPackets);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
-				genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
+				genDisc11->alphas[n] = alpha_values[n];
+				genDisc11->SetQrefAfd(n,uint32_t(RTTBytes));
 			}
 			break;
 		case ABM:
-			genDisc->SetBufferAlgorithm(ABM);
+			genDisc11->SetBufferAlgorithm(ABM);
 			for(uint32_t n=0;n<nPrior;n++){
-				genDisc->alphas[n] = alpha_values[n];
+				genDisc11->alphas[n] = alpha_values[n];
 			}
 			break;
 		default:
@@ -811,8 +813,8 @@ main (int argc, char *argv[])
 	}
 
 	address.NewNetwork ();
-	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
-	nsInterface.Add (interfacesBottleneck.Get (1));
+	Ipv4InterfaceContainer interfacesBottleneck1 = address.Assign (devicesBottleneckLink1);
+	nsInterface1.Add (interfacesBottleneck1.Get (1));
 
 
 	std::cout << "start installing applications" << std::endl;
@@ -827,53 +829,54 @@ main (int argc, char *argv[])
 	// uint32_t flowcount = 0;
 	// srand(randomSeed);
 	// NS_LOG_INFO ("Initialize random seed: " << randomSeed);
-	uint32_t node = 1;
-	uint32_t sink = 1;
-	double startTime = START_TIME + poission_gen_interval(0.2);
-	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
-		startTime = START_TIME + poission_gen_interval(0.2);
-	}
+	// node = 1;
+	// sink = 1;
+	startTime = START_TIME + 4;
+	// double startTime = START_TIME + poission_gen_interval(0.2);
+	// while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+	// 	startTime = START_TIME + poission_gen_interval(0.2);
+	// }
 
-	// uint64_t flowSize = 1000000000000;
-	uint64_t flowSize = gen_random_cdf(cdfTable);
-	while (flowSize == 0) { 
-		flowSize = gen_random_cdf(cdfTable); 
-	}
+	flowSize = 1000000000000;
+	// uint64_t flowSize = gen_random_cdf(cdfTable);
+	// while (flowSize == 0) { 
+	// 	flowSize = gen_random_cdf(cdfTable); 
+	// }
 
 	// ACK packets are prioritized
-	uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
+	flowPriority = rand_range((u_int32_t)1,nPrior-1);
 
-	InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
-	Address sinkAddress(ad);
+	InetSocketAddress ad1(nsInterface1.GetAddress(sink), portnumber);
+	Address sinkAddress1(ad1);
 
-	std::cout << "Sending from node " << node << " to sink " << sink << ": ";
+	std::cout << "Sending from server " << server << " to sink " << sink << ": ";
 	std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
 
-	Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
-	bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
-	bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
-	bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
-	bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
-	bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
-	bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
-	bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
-	bulksend->SetAttribute("priority",UintegerValue(flowPriority));
-	bulksend->SetStartTime (Seconds(startTime));
-	bulksend->SetStopTime (Seconds (END_TIME));
-	nodecontainers.Get(node)->AddApplication(bulksend);
+	Ptr<BulkSendApplication> bulksend1 = CreateObject<BulkSendApplication>();
+	bulksend1->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+	bulksend1->SetAttribute("Remote",AddressValue(sinkAddress1)); 
+	bulksend1->SetAttribute ("SendSize", UintegerValue (flowSize));
+	bulksend1->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+	bulksend1->SetAttribute("FlowId", UintegerValue(flowcount++));
+	bulksend1->SetAttribute("InitialCwnd", UintegerValue (4));
+	bulksend1->SetAttribute("priorityCustom",UintegerValue(flowPriority));
+	bulksend1->SetAttribute("priority",UintegerValue(flowPriority));
+	bulksend1->SetStartTime (Seconds(startTime));
+	bulksend1->SetStopTime (Seconds (END_TIME));
+	nodecontainers.Get(server)->AddApplication(bulksend1);
 
-	PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
-	ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
-	sinkApp.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
-	sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
-	sinkApp.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
-	sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
+	PacketSinkHelper packetSink1("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
+	ApplicationContainer sinkApp1 = packetSink1.Install(sinkcontainers.Get(sink));
+	sinkApp1.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+	sinkApp1.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+	sinkApp1.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
+	sinkApp1.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
 	// ACK packets are prioritized
-	sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
-	sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
-	sinkApp.Start(Seconds(0));
-	sinkApp.Stop(Seconds(END_TIME));
-	sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+	sinkApp1.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
+	sinkApp1.Get(0)->SetAttribute("priority",UintegerValue(0));
+	sinkApp1.Start(Seconds(0));
+	sinkApp1.Stop(Seconds(END_TIME));
+	sinkApp1.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
 
 	portnumber++;
 
