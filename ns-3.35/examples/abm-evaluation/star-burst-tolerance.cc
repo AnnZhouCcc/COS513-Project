@@ -206,13 +206,13 @@ main (int argc, char *argv[])
 	uint32_t rto = 10*1000; // in MicroSeconds, 5 milliseconds.
 	cmd.AddValue ("rto", "min Retransmission timeout value in MicroSeconds", rto);
 
-	uint32_t numSinks = 1;
-	cmd.AddValue ("numSinks", "number of sinks", numSinks);
+	uint32_t numSinks = 2;
+	// cmd.AddValue ("numSinks", "number of sinks", numSinks);
 
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
-	int numNodes = 10;
+	uint32_t numNodes = 2;
 
 	fctOutput = asciiTraceHelper.CreateFileStream (fctOutFile);
 
@@ -320,23 +320,28 @@ main (int argc, char *argv[])
 	stack.SetRoutingHelper (globalRoutingHelper);
 
 
-	TrafficControlHelper tc;
-    uint16_t handle;
-    TrafficControlHelper::ClassIdList cid;
+	/****************************************************************/
+	/* Server0 <-> Leaf, Leaf <-> Sink0                             */
+	/* Hard-coded                                                   */
+	/****************************************************************/
+
+	TrafficControlHelper tc0;
+    uint16_t handle0;
+    TrafficControlHelper::ClassIdList cid0;
 
     /*CC Configuration*/
-    std::cout << "TcpProt=" << TcpProt << std::endl;
-    switch (TcpProt){
+    std::cout << "TcpProt0=" << TcpProt0 << std::endl;
+    switch (TcpProt0){
     	case RENO:
 			Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpNewReno::GetTypeId()));
 			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
 			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
 			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
 			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
-			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
-		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
+			handle0 = tc0.SetRootQueueDisc ("ns3::GenQueueDisc");
+		    cid0 = tc0.AddQueueDiscClasses (handle0, nPrior , "ns3::QueueDiscClass");
 		    for(uint32_t num=0;num<nPrior;num++){
-				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
+				tc0.AddChildQueueDisc (handle0, cid0[num], "ns3::FifoQueueDisc");
 			}
 			break;
     	case CUBIC:
@@ -345,10 +350,10 @@ main (int argc, char *argv[])
         	Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
         	Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
 			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
-			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
-		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
+			handle0 = tc0.SetRootQueueDisc ("ns3::GenQueueDisc");
+			cid0 = tc0.AddQueueDiscClasses (handle0, nPrior , "ns3::QueueDiscClass");
 		    for(uint32_t num=0;num<nPrior;num++){
-				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
+				tc0.AddChildQueueDisc (handle0, cid0[num], "ns3::FifoQueueDisc");
 			}
         	break;
         case DCTCP:
@@ -369,10 +374,10 @@ main (int argc, char *argv[])
 			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
 			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
 			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
-			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
-		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
+			handle0 = tc0.SetRootQueueDisc ("ns3::GenQueueDisc");
+		    cid0 = tc0.AddQueueDiscClasses (handle0, nPrior , "ns3::QueueDiscClass");
 			for(uint32_t num=0;num<nPrior;num++){
-				tc.AddChildQueueDisc (handle, cid[num], "ns3::RedQueueDisc", "MinTh", DoubleValue (RedMinTh*PACKET_SIZE), "MaxTh", DoubleValue (RedMaxTh*PACKET_SIZE));
+				tc0.AddChildQueueDisc (handle0, cid0[num], "ns3::RedQueueDisc", "MinTh", DoubleValue (RedMinTh*PACKET_SIZE), "MaxTh", DoubleValue (RedMaxTh*PACKET_SIZE));
 			}
 			break;
 		default:
@@ -443,37 +448,27 @@ main (int argc, char *argv[])
 	// 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
 	// }
 
-	/* Server <--> Leaf */
-	std::cout << "nodecontainers.GetN()=" << nodecontainers.GetN() << std::endl;
-	for (uint32_t server=0; server<nodecontainers.GetN(); server++) {
-		std::cout << server << std::endl;
-		NetDeviceContainer netDeviceContainer = accessLink.Install(nodecontainers.Get(server), nd.Get(0));
-		std::cout << "netDeviceContainer.GetN()=" << netDeviceContainer.GetN() << std::endl;
-		std::cout << "netd0 " << netDeviceContainer.Get(0) << std::endl;
-		std::cout << "netd1 " << netDeviceContainer.Get(1) << std::endl;
-		QueueDiscContainer queuedisc = tc.Install(netDeviceContainer.Get(1));
-		std::cout << "queuedisc.getN()=" << queuedisc.GetN() << std::endl;
-		bottleneckQueueDiscs.Add(queuedisc.Get(0));
-		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
-		std::cout << queuedisc.Get(0) << " queuedisc0" << std::endl;
-		std::cout << portid << "before" << std::endl;
-		std::cout << genDisc << std::endl;
-		genDisc->SetPortId(portid++);
-		std::cout << "after" << std::endl;
-		std::cout << portid << "after" << std::endl;
-		// AnnC: [artemis-star-topology] Assume to be DT.
-		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		genDisc->setPortBw(serverLeafCapacity);
-		genDisc->SetSharedMemory(sharedMemory);
-		genDisc->SetBufferAlgorithm(DT);
-		for(uint32_t n=0;n<nPrior;n++){
-			genDisc->alphas[n] = alpha_values[n];
-		}
-		address.NewNetwork ();
-		address.Assign (netDeviceContainer);
+	/* Server0 <--> Leaf */
+	uint32_t server=0;
+	NetDeviceContainer netDeviceContainer = accessLink.Install(nodecontainers.Get(server), nd.Get(0));
+	QueueDiscContainer queuedisc = tc0.Install(netDeviceContainer.Get(1));
+	bottleneckQueueDiscs.Add(queuedisc.Get(0));
+	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
+	genDisc->SetPortId(portid++);
+	std::cout << "after" << std::endl;
+	std::cout << portid << "after" << std::endl;
+	// AnnC: [artemis-star-topology] Assume to be DT.
+	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	genDisc->setPortBw(serverLeafCapacity);
+	genDisc->SetSharedMemory(sharedMemory);
+	genDisc->SetBufferAlgorithm(DT);
+	for(uint32_t n=0;n<nPrior;n++){
+		genDisc->alphas[n] = alpha_values[n];
 	}
+	address.NewNetwork ();
+	address.Assign (netDeviceContainer);
 
-	std::cout << "done with server<->leaf links" << std::endl;
+	std::cout << "done with server0<->leaf links" << std::endl;
 
 
 	PointToPointHelper bottleneckLink;
@@ -483,63 +478,62 @@ main (int argc, char *argv[])
 	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
 	// }
 
-	/* Leaf <--> Sink */
+	/* Leaf <--> Sink0 */
 	Ipv4InterfaceContainer nsInterface;
-	for (uint32_t sink=0; sink<numSinks; sink++) {
-		NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), sinkcontainers.Get (sink));
-		QueueDiscContainer qdiscs = tc.Install (devicesBottleneckLink.Get(0));
-		bottleneckQueueDiscs.Add(qdiscs.Get(0));
-		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
-		genDisc->SetPortId(portid++);
-		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		genDisc->setPortBw(leafSinkCapacity);
-		genDisc->SetSharedMemory(sharedMemory);
-		switch(algorithm){
-			case DT:
-				genDisc->SetBufferAlgorithm(DT);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-				}
-				break;
-			case FAB:
-				genDisc->SetBufferAlgorithm(FAB);
-				genDisc->SetFabWindow(MicroSeconds(5000));
-				genDisc->SetFabThreshold(15*PACKET_SIZE);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-				}
-				break;
-			case CS:
-				genDisc->SetBufferAlgorithm(CS);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-				}
-				break;
-			case IB:
-				genDisc->SetBufferAlgorithm(IB);
-				genDisc->SetAfdWindow(MicroSeconds(50));
-				genDisc->SetDppWindow(MicroSeconds(5000));
-				genDisc->SetDppThreshold(RTTPackets);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-					genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
-				}
-				break;
-			case ABM:
-				genDisc->SetBufferAlgorithm(ABM);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-				}
-				break;
-			default:
-				std::cout << "Error in buffer management configuration. Exiting!";
-				return 0;
-		}
-
-		address.NewNetwork ();
-		Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
-		nsInterface.Add (interfacesBottleneck.Get (1));
+	uint32_t sink = 0;
+	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), sinkcontainers.Get (sink));
+	QueueDiscContainer qdiscs = tc0.Install (devicesBottleneckLink.Get(0));
+	bottleneckQueueDiscs.Add(qdiscs.Get(0));
+	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
+	genDisc->SetPortId(portid++);
+	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	genDisc->setPortBw(leafSinkCapacity);
+	genDisc->SetSharedMemory(sharedMemory);
+	switch(algorithm){
+		case DT:
+			genDisc->SetBufferAlgorithm(DT);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case FAB:
+			genDisc->SetBufferAlgorithm(FAB);
+			genDisc->SetFabWindow(MicroSeconds(5000));
+			genDisc->SetFabThreshold(15*PACKET_SIZE);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case CS:
+			genDisc->SetBufferAlgorithm(CS);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case IB:
+			genDisc->SetBufferAlgorithm(IB);
+			genDisc->SetAfdWindow(MicroSeconds(50));
+			genDisc->SetDppWindow(MicroSeconds(5000));
+			genDisc->SetDppThreshold(RTTPackets);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+				genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
+			}
+			break;
+		case ABM:
+			genDisc->SetBufferAlgorithm(ABM);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		default:
+			std::cout << "Error in buffer management configuration. Exiting!";
+			return 0;
 	}
+
+	address.NewNetwork ();
+	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
+	nsInterface.Add (interfacesBottleneck.Get (1));
 
 
 	std::cout << "start installing applications" << std::endl;
@@ -550,61 +544,338 @@ main (int argc, char *argv[])
 	init_cdf (cdfTable);
 	load_cdf (cdfTable, cdfFileName.c_str ());
 
-	uint32_t nodetosink[numNodes] = {0,0,1,1,1,1,1,1,1,1};
 	uint32_t portnumber = 9;
 	uint32_t flowcount = 0;
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
-	for (uint32_t node=0; node<numNodes; node++) {
-		double startTime = START_TIME + poission_gen_interval(0.2);
-		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
-			startTime = START_TIME + poission_gen_interval(0.2);
-		}
-
-		// uint64_t flowSize = 1000000000000;
-		uint64_t flowSize = gen_random_cdf(cdfTable);
-		while (flowSize == 0) { 
-			flowSize = gen_random_cdf(cdfTable); 
-		}
-
-		// ACK packets are prioritized
-		uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
-
-		uint32_t sink = nodetosink[node];
-		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
-		Address sinkAddress(ad);
-
-		std::cout << "Sending from node " << node << " to sink " << sink << ": ";
-		std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
-
-		Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
-		bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
-		bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
-		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
-        bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
-		bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
-		bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
-		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
-		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
-		bulksend->SetStartTime (Seconds(startTime));
-        bulksend->SetStopTime (Seconds (END_TIME));
-		nodecontainers.Get(node)->AddApplication(bulksend);
-
-		PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
-		ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
-		sinkApp.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
-		sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
-		sinkApp.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
-		sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
-		// ACK packets are prioritized
-		sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
-		sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
-		sinkApp.Start(Seconds(0));
-		sinkApp.Stop(Seconds(END_TIME));
-		sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
-
-		portnumber++;
+	uint32_t node = 0;
+	uint32_t sink = 0;
+	double startTime = START_TIME + poission_gen_interval(0.2);
+	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+		startTime = START_TIME + poission_gen_interval(0.2);
 	}
+
+	// uint64_t flowSize = 1000000000000;
+	uint64_t flowSize = gen_random_cdf(cdfTable);
+	while (flowSize == 0) { 
+		flowSize = gen_random_cdf(cdfTable); 
+	}
+
+	// ACK packets are prioritized
+	uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
+
+	InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
+	Address sinkAddress(ad);
+
+	std::cout << "Sending from node " << node << " to sink " << sink << ": ";
+	std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
+
+	Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+	bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+	bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
+	bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+	bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+	bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
+	bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+	bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
+	bulksend->SetAttribute("priority",UintegerValue(flowPriority));
+	bulksend->SetStartTime (Seconds(startTime));
+	bulksend->SetStopTime (Seconds (END_TIME));
+	nodecontainers.Get(node)->AddApplication(bulksend);
+
+	PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
+	ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
+	sinkApp.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+	sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+	sinkApp.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
+	sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
+	// ACK packets are prioritized
+	sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
+	sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
+	sinkApp.Start(Seconds(0));
+	sinkApp.Stop(Seconds(END_TIME));
+	sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+
+	portnumber++;
+
+
+	/****************************************************************/
+	/* Server1 <-> Leaf, Leaf <-> Sink1                             */
+	/* Hard-coded                                                   */
+	/****************************************************************/
+
+	TrafficControlHelper tc1;
+    uint16_t handle1;
+    TrafficControlHelper::ClassIdList cid1;
+
+    /*CC Configuration*/
+    std::cout << "TcpProt1=" << TcpProt1 << std::endl;
+	switch (TcpProt1){
+    	case RENO:
+			Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpNewReno::GetTypeId()));
+			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
+			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
+			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
+			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
+			handle1 = tc1.SetRootQueueDisc ("ns3::GenQueueDisc");
+		    cid1 = tc1.AddQueueDiscClasses (handle1, nPrior , "ns3::QueueDiscClass");
+		    for(uint32_t num=0;num<nPrior;num++){
+				tc1.AddChildQueueDisc (handle1, cid1[num], "ns3::FifoQueueDisc");
+			}
+			break;
+    	case CUBIC:
+        	Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpCubic::GetTypeId()));
+        	Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
+        	Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
+        	Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
+			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
+			handle1 = tc1.SetRootQueueDisc ("ns3::GenQueueDisc");
+			cid1 = tc1.AddQueueDiscClasses (handle1, nPrior , "ns3::QueueDiscClass");
+		    for(uint32_t num=0;num<nPrior;num++){
+				tc1.AddChildQueueDisc (handle1, cid1[num], "ns3::FifoQueueDisc");
+			}
+        	break;
+        case DCTCP:
+        	Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpDctcp::GetTypeId()));
+			Config::SetDefault ("ns3::RedQueueDisc::UseEcn", BooleanValue (true));
+			Config::SetDefault ("ns3::RedQueueDisc::QW", DoubleValue (1.0));
+			Config::SetDefault ("ns3::RedQueueDisc::MinTh", DoubleValue (RedMinTh*PACKET_SIZE));
+			Config::SetDefault ("ns3::RedQueueDisc::MaxTh", DoubleValue (RedMaxTh*PACKET_SIZE));
+			Config::SetDefault ("ns3::RedQueueDisc::MaxSize", QueueSizeValue (QueueSize ("100MB"))); // This is just for initialization. The buffer management algorithm will take care of the rest.
+			Config::SetDefault ("ns3::TcpSocketBase::UseEcn", StringValue ("On"));
+			Config::SetDefault ("ns3::RedQueueDisc::LInterm", DoubleValue (0.0));
+			Config::SetDefault ("ns3::RedQueueDisc::UseHardDrop", BooleanValue (false));
+			Config::SetDefault ("ns3::RedQueueDisc::Gentle", BooleanValue (false));
+			Config::SetDefault ("ns3::RedQueueDisc::MeanPktSize", UintegerValue (PACKET_SIZE));
+			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
+			UseEcn =1;
+			ecnEnabled = "EcnEnabled";
+			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
+			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
+			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
+			handle1 = tc1.SetRootQueueDisc ("ns3::GenQueueDisc");
+		    cid1 = tc1.AddQueueDiscClasses (handle1, nPrior , "ns3::QueueDiscClass");
+			for(uint32_t num=0;num<nPrior;num++){
+				tc1.AddChildQueueDisc (handle1, cid1[num], "ns3::RedQueueDisc", "MinTh", DoubleValue (RedMinTh*PACKET_SIZE), "MaxTh", DoubleValue (RedMaxTh*PACKET_SIZE));
+			}
+			break;
+		default:
+			std::cout << "Error in CC configuration" << std::endl;
+			return 0;
+    }
+    std::cout << "done configuring CC" << std::endl;
+
+	// AnnC: [artemis-star-topology] Add AQM later; the CC above has already SetRootQueueDisc to GenQueueDisc
+    // if (queueDiscType.compare ("PfifoFast") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::PfifoFastQueueDisc", "MaxSize",
+    //                                   QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("ARED") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::RedQueueDisc");
+	// 	Config::SetDefault ("ns3::RedQueueDisc::ARED", BooleanValue (true));
+	// 	Config::SetDefault ("ns3::RedQueueDisc::MaxSize",
+    //                       QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("CoDel") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::CoDelQueueDisc");
+	// 	Config::SetDefault ("ns3::CoDelQueueDisc::MaxSize",
+    //                       QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("FqCoDel") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::FqCoDelQueueDisc");
+	// 	Config::SetDefault ("ns3::FqCoDelQueueDisc::MaxSize",
+    //                       QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("PIE") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::PieQueueDisc");
+	// 	Config::SetDefault ("ns3::PieQueueDisc::MaxSize",
+    //                       QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, queueDiscSize)));
+    // }
+    // else if (queueDiscType.compare ("prio") == 0)
+    // {
+	// 	handle = tc.SetRootQueueDisc ("ns3::PrioQueueDisc", "Priomap",
+    //                                                     StringValue ("0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1"));
+	// 	TrafficControlHelper::ClassIdList cid = tchBottleneck.AddQueueDiscClasses (handle, 2, "ns3::QueueDiscClass");
+	// 	tchBottleneck.AddChildQueueDisc (handle, cid[0], "ns3::FifoQueueDisc");
+	// 	tchBottleneck.AddChildQueueDisc (handle, cid[1], "ns3::RedQueueDisc");
+    // }
+
+	// bool dropTail = (queueDiscType == "droptail");
+	// uint32_t queueDiscSize = 10;
+
+
+	// Ipv4AddressHelper address;
+	// address.SetBase ("10.1.0.0", "255.255.252.0");
+
+	// sharedMemory = CreateObject<SharedMemoryBuffer>();
+	// sharedMemory->SetAttribute("BufferSize",UintegerValue(BufferSize));
+	// sharedMemory->SetSharedBufferSize(BufferSize);
+
+	// int portid = 0;
+
+	std::cout << "checkpoint1" << std::endl;
+
+	// PointToPointHelper accessLink;
+	// accessLink.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
+	// accessLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(serverLeafLinkLatency)));
+	// if (dropTail) {
+	// 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
+	// }
+
+	/* Server1 <--> Leaf */
+	uint32_t server=1;
+	NetDeviceContainer netDeviceContainer = accessLink.Install(nodecontainers.Get(server), nd.Get(0));
+	QueueDiscContainer queuedisc = tc1.Install(netDeviceContainer.Get(1));
+	bottleneckQueueDiscs.Add(queuedisc.Get(0));
+	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
+	genDisc->SetPortId(portid++);
+	std::cout << "after" << std::endl;
+	std::cout << portid << "after" << std::endl;
+	// AnnC: [artemis-star-topology] Assume to be DT.
+	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	genDisc->setPortBw(serverLeafCapacity);
+	genDisc->SetSharedMemory(sharedMemory);
+	genDisc->SetBufferAlgorithm(DT);
+	for(uint32_t n=0;n<nPrior;n++){
+		genDisc->alphas[n] = alpha_values[n];
+	}
+	address.NewNetwork ();
+	address.Assign (netDeviceContainer);
+
+	std::cout << "done with server1<->leaf links" << std::endl;
+
+
+	// PointToPointHelper bottleneckLink;
+	// bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
+	// bottleneckLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatency)));
+	// if (dropTail) {
+	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
+	// }
+
+	/* Leaf <--> Sink1 */
+	Ipv4InterfaceContainer nsInterface;
+	uint32_t sink = 1;
+	NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), sinkcontainers.Get (sink));
+	QueueDiscContainer qdiscs = tc1.Install (devicesBottleneckLink.Get(0));
+	bottleneckQueueDiscs.Add(qdiscs.Get(0));
+	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
+	genDisc->SetPortId(portid++);
+	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	genDisc->setPortBw(leafSinkCapacity);
+	genDisc->SetSharedMemory(sharedMemory);
+	switch(algorithm){
+		case DT:
+			genDisc->SetBufferAlgorithm(DT);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case FAB:
+			genDisc->SetBufferAlgorithm(FAB);
+			genDisc->SetFabWindow(MicroSeconds(5000));
+			genDisc->SetFabThreshold(15*PACKET_SIZE);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case CS:
+			genDisc->SetBufferAlgorithm(CS);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case IB:
+			genDisc->SetBufferAlgorithm(IB);
+			genDisc->SetAfdWindow(MicroSeconds(50));
+			genDisc->SetDppWindow(MicroSeconds(5000));
+			genDisc->SetDppThreshold(RTTPackets);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+				genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
+			}
+			break;
+		case ABM:
+			genDisc->SetBufferAlgorithm(ABM);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		default:
+			std::cout << "Error in buffer management configuration. Exiting!";
+			return 0;
+	}
+
+	address.NewNetwork ();
+	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
+	nsInterface.Add (interfacesBottleneck.Get (1));
+
+
+	std::cout << "start installing applications" << std::endl;
+
+	// Install applications
+	// NS_LOG_INFO ("Initialize CDF table");
+	// struct cdf_table* cdfTable = new cdf_table ();
+	// init_cdf (cdfTable);
+	// load_cdf (cdfTable, cdfFileName.c_str ());
+
+	// uint32_t portnumber = 9;
+	// uint32_t flowcount = 0;
+	// srand(randomSeed);
+	// NS_LOG_INFO ("Initialize random seed: " << randomSeed);
+	uint32_t node = 1;
+	uint32_t sink = 1;
+	double startTime = START_TIME + poission_gen_interval(0.2);
+	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+		startTime = START_TIME + poission_gen_interval(0.2);
+	}
+
+	// uint64_t flowSize = 1000000000000;
+	uint64_t flowSize = gen_random_cdf(cdfTable);
+	while (flowSize == 0) { 
+		flowSize = gen_random_cdf(cdfTable); 
+	}
+
+	// ACK packets are prioritized
+	uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
+
+	InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
+	Address sinkAddress(ad);
+
+	std::cout << "Sending from node " << node << " to sink " << sink << ": ";
+	std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
+
+	Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+	bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+	bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
+	bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+	bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+	bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
+	bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+	bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
+	bulksend->SetAttribute("priority",UintegerValue(flowPriority));
+	bulksend->SetStartTime (Seconds(startTime));
+	bulksend->SetStopTime (Seconds (END_TIME));
+	nodecontainers.Get(node)->AddApplication(bulksend);
+
+	PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
+	ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
+	sinkApp.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+	sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+	sinkApp.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
+	sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
+	// ACK packets are prioritized
+	sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
+	sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
+	sinkApp.Start(Seconds(0));
+	sinkApp.Stop(Seconds(END_TIME));
+	sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+
+	portnumber++;
 
 
 	Simulator::Schedule(Seconds(START_TIME),StarTopologyInvokeToRStats,torStats, BufferSize, printDelay, nPrior);
