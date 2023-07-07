@@ -247,6 +247,7 @@ main (int argc, char *argv[])
 
 
 	// AnnC: [artemis-star-topology] Not supporting static buffer for now.
+	std::cout << "total buffer size = " << BufferSize << std::endl;
 	// uint32_t staticBuffer = (double) BufferSize*statBuf/(SERVER_COUNT+SPINE_COUNT*LINK_COUNT);
 	uint32_t staticBuffer = 0;
 	BufferSize = BufferSize - staticBuffer; // BufferSize is the buffer pool which is available for sharing
@@ -538,6 +539,7 @@ main (int argc, char *argv[])
 
 	std::cout << "start installing applications" << std::endl;
 
+	// Application0
 	// Install applications
 	NS_LOG_INFO ("Initialize CDF table");
 	struct cdf_table* cdfTable = new cdf_table ();
@@ -557,7 +559,7 @@ main (int argc, char *argv[])
 	// 	startTime = START_TIME + poission_gen_interval(0.2);
 	// }
 
-	uint64_t flowSize = 1000000000000;
+	uint64_t flowSize = 1e9;
 	// uint64_t flowSize = gen_random_cdf(cdfTable);
 	// while (flowSize == 0) { 
 	// 	flowSize = gen_random_cdf(cdfTable); 
@@ -566,7 +568,7 @@ main (int argc, char *argv[])
 	// ACK packets are prioritized
 	uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
 
-	InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
+	InetSocketAddress ad(nsInterface.GetAddress(0), portnumber);
 	Address sinkAddress(ad);
 
 	std::cout << "Sending from server " << server << " to sink " << sink << ": ";
@@ -819,6 +821,7 @@ main (int argc, char *argv[])
 
 	std::cout << "start installing applications" << std::endl;
 
+	// Application1
 	// Install applications
 	// NS_LOG_INFO ("Initialize CDF table");
 	// struct cdf_table* cdfTable = new cdf_table ();
@@ -837,16 +840,16 @@ main (int argc, char *argv[])
 	// 	startTime = START_TIME + poission_gen_interval(0.2);
 	// }
 
-	flowSize = 1000000000000;
-	// uint64_t flowSize = gen_random_cdf(cdfTable);
-	// while (flowSize == 0) { 
-	// 	flowSize = gen_random_cdf(cdfTable); 
-	// }
+	flowSize = 1e9;
+	//flowSize = gen_random_cdf(cdfTable);
+	while (flowSize == 0) { 
+		flowSize = gen_random_cdf(cdfTable); 
+	}
 
 	// ACK packets are prioritized
 	flowPriority = rand_range((u_int32_t)1,nPrior-1);
 
-	InetSocketAddress ad1(nsInterface1.GetAddress(sink), portnumber);
+	InetSocketAddress ad1(nsInterface1.GetAddress(0), portnumber);
 	Address sinkAddress1(ad1);
 
 	std::cout << "Sending from server " << server << " to sink " << sink << ": ";
