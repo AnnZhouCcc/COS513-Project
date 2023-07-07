@@ -409,6 +409,7 @@ void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer*
             //uint32_t rxServer = rand_range(0,SERVER_COUNT);
             uint32_t rxServer = 0;
             std::cout << "rxLeaf=" << rxLeaf << ", rxServer=" << rxServer << std::endl;
+	    std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << std::endl;
 
         	uint16_t port = PORT_START[rxLeaf*SERVER_COUNT + rxServer]++;
             if (port>PORT_END){
@@ -436,7 +437,7 @@ void install_applications_simple_noincast_continuous (int txLeaf, NodeContainer*
             bulksend->SetAttribute("FlowId", UintegerValue(flowCount++));
             bulksend->SetAttribute("priorityCustom",UintegerValue(prior));
             bulksend->SetAttribute("Remote", AddressValue(sinkAddress));
-            bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+            bulksend->SetAttribute("InitialCwnd", UintegerValue (55));
 			bulksend->SetAttribute("priority",UintegerValue(prior));
             bulksend->SetStartTime (Seconds(startTime));
             bulksend->SetStopTime (Seconds (END_TIME));
@@ -927,7 +928,7 @@ main (int argc, char *argv[])
     				genDisc->SetBufferAlgorithm(DT);
     				for(uint32_t n=0;n<nPrior;n++){
                         genDisc->alphas[n] = alpha_values[n];
-			std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
+			//std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
                     }
     				break;
     			case FAB:
@@ -1023,7 +1024,7 @@ main (int argc, char *argv[])
 		    				genDisc[i]->SetBufferAlgorithm(DT);
 		    				for(uint32_t n=0;n<nPrior;n++){
 		                        genDisc[i]->alphas[n] = alpha_values[n];
-							std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
+							//std::cout << "n=" << n << ", alpha=" << alpha_values[n] << std::endl;
 		                    }
 		    				break;
 		    			case FAB:

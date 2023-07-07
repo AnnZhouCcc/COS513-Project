@@ -56,7 +56,7 @@ extern "C"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("STAR_BURST_TOLERANCE");
+NS_LOG_COMPONENT_DEFINE ("STAR_SIMPLE");
 
 double alpha_values[8]={1};
 
@@ -209,7 +209,7 @@ main (int argc, char *argv[])
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
-	int numNodes = 10;
+	int numNodes = 2;
 
 	fctOutput = asciiTraceHelper.CreateFileStream (fctOutFile);
 
@@ -432,6 +432,7 @@ main (int argc, char *argv[])
 	int portid = 0;
 
 	std::cout << "checkpoint0" << std::endl;
+	std::cout << "serverLeafCapacity=" << serverLeafCapacity << ", leafSinkCapacity=" << leafSinkCapacity << std::endl;
 
 	PointToPointHelper accessLink;
 	accessLink.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
@@ -547,21 +548,28 @@ main (int argc, char *argv[])
 	init_cdf (cdfTable);
 	load_cdf (cdfTable, cdfFileName.c_str ());
 
-	uint32_t nodetosink[numNodes] = {0,0,1,1,1,1,1,1,1,1};
+	uint32_t nodetosink[numNodes] = {0,1};
 	uint32_t portnumber = 9;
 	uint32_t flowcount = 0;
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	for (uint32_t node=0; node<numNodes; node++) {
-		double startTime = START_TIME + poission_gen_interval(0.2);
-		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
-			startTime = START_TIME + poission_gen_interval(0.2);
-		}
+		//double startTime = START_TIME + poission_gen_interval(0.2);
+		//while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+		//	startTime = START_TIME + poission_gen_interval(0.2);
+		//}
 
-		// uint64_t flowSize = 1000000000000;
+		//uint64_t flowSize = 1e9;
 		uint64_t flowSize = gen_random_cdf(cdfTable);
 		while (flowSize == 0) { 
 			flowSize = gen_random_cdf(cdfTable); 
+		}
+		double startTime = START_TIME;
+		if (node==0) {
+			startTime += 1;
+		} else if (node==1) {
+			startTime += 4;
+			//flowSize = 1e9;
 		}
 
 		// ACK packets are prioritized
