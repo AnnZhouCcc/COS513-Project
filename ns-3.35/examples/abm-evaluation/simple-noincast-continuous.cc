@@ -260,11 +260,11 @@ void install_applications (int txLeaf, NodeContainer* servers, double requestRat
                 flowSize=gen_random_cdf (cdfTable);
             }
 
-        	Ptr<Node> rxNode = servers[rxLeaf].Get (rxServer);
-        	Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
-        	Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
-            Ipv4Address rxAddress = rxInterface.GetLocal ();
-
+        	// Ptr<Node> rxNode = servers[rxLeaf].Get (rxServer);
+        	// Ptr<Ipv4> ipv4 = rxNode->GetObject<Ipv4> ();
+        	// Ipv4InterfaceAddress rxInterface = ipv4->GetAddress (1,0);
+            // Ipv4Address rxAddress = rxInterface.GetLocal ();
+			Ipv4Address rxAddress = servers[rxLeaf].Get(rxServer)->GetObject<Ipv4>()->GetAddress(1,0).GetLocal(); // didnt quite get the GetAddress(1,0) part
             InetSocketAddress ad (rxAddress, port);
             Address sinkAddress(ad);
             Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
@@ -854,7 +854,7 @@ main (int argc, char *argv[])
 	NodeContainer leaves;
 	leaves.Create (LEAF_COUNT);
 	NodeContainer servers[LEAF_COUNT];
-	Ipv4InterfaceContainer serverIpv4[LEAF_COUNT];
+	// Ipv4InterfaceContainer serverIpv4[LEAF_COUNT];
 
 	// std::string TcpMixNames[3] = {"ns3::TcpCubic", "ns3::TcpDctcp", "ns3::TcpWien"};
 	// uint32_t mixRatio[2]={cubicMix,dctcpMix};
@@ -981,17 +981,17 @@ main (int argc, char *argv[])
     	}
     }
 
-    std::vector<InetSocketAddress> clients[LEAF_COUNT];
-    for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
-    	for (uint32_t leafnext = 0; leafnext < LEAF_COUNT ; leafnext++){
-    		if (leaf==leafnext){
-    			continue;
-    		}
-    		for (uint32_t server = 0; server < SERVER_COUNT; server++){
-    			clients[leaf].push_back(InetSocketAddress (serverNics[leafnext][server].GetAddress (0), 1000+leafnext*LEAF_COUNT + server));
-    		}
-    	}
-    }
+    // std::vector<InetSocketAddress> clients[LEAF_COUNT];
+    // for (uint32_t leaf = 0; leaf<LEAF_COUNT; leaf++){
+    // 	for (uint32_t leafnext = 0; leafnext < LEAF_COUNT ; leafnext++){
+    // 		if (leaf==leafnext){
+    // 			continue;
+    // 		}
+    // 		for (uint32_t server = 0; server < SERVER_COUNT; server++){
+    // 			clients[leaf].push_back(InetSocketAddress (serverNics[leafnext][server].GetAddress (0), 1000+leafnext*LEAF_COUNT + server));
+    // 		}
+    // 	}
+    // }
 
    /*Leaf <--> Spine*/
     p2p.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (SPINE_LEAF_CAPACITY)));
@@ -1004,7 +1004,7 @@ main (int argc, char *argv[])
     			NodeContainer nodeContainer = NodeContainer (leaves.Get (leaf), spines.Get (spine));
                 NetDeviceContainer netDeviceContainer = p2p.Install (nodeContainer);
                 QueueDiscContainer queueDiscs = tc.Install(netDeviceContainer);
-                northQueues[leaf].Add(queueDiscs.Get(0));
+                northQueues[leaf].Add(queueDiscs.Get(0)); // not actually used
 		ToRQueueDiscs[leaf].Add(queueDiscs.Get(0));// MA
                 Ptr<GenQueueDisc> genDisc[2];
                 genDisc[0] = DynamicCast<GenQueueDisc> (queueDiscs.Get (0));
@@ -1017,8 +1017,9 @@ main (int argc, char *argv[])
 	                switch(algorithm){
 		    			case DT:
 		    				genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+							genDisc[i]->setPortBw(spineLeafCapacity);
+		    				// genDisc[i]->setPortBw(leafServerCapacity);
+		    				// genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
 		    				genDisc[i]->SetBufferAlgorithm(DT);
 		    				for(uint32_t n=0;n<nPrior;n++){
 		                        genDisc[i]->alphas[n] = alpha_values[n];
@@ -1028,7 +1029,7 @@ main (int argc, char *argv[])
 		    			case FAB:
 			    			genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
 		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+		    				// genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
 		    				genDisc[i]->SetBufferAlgorithm(FAB);
 		    				genDisc[i]->SetFabWindow(MicroSeconds(5000));
 		    				genDisc[i]->SetFabThreshold(15*PACKET_SIZE);
@@ -1039,7 +1040,7 @@ main (int argc, char *argv[])
 		    			case CS:
 		    				genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
 		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+		    				// genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
 		    				genDisc[i]->SetBufferAlgorithm(CS);
 		    				for(uint32_t n=0;n<nPrior;n++){
 		                        genDisc[i]->alphas[n] = alpha_values[n];
@@ -1048,7 +1049,7 @@ main (int argc, char *argv[])
 		    			case IB:
 			    			genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
 		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+		    				// genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
 		    				genDisc[i]->SetBufferAlgorithm(IB);
 		                    genDisc[i]->SetAfdWindow(MicroSeconds(50));
 		                    genDisc[i]->SetDppWindow(MicroSeconds(5000));
@@ -1061,7 +1062,7 @@ main (int argc, char *argv[])
 		    			case ABM:
 		    				genDisc[i]->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
 		    				genDisc[i]->setPortBw(leafServerCapacity);
-		    				genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
+		    				// genDisc[i]->SetSharedMemory(sharedMemoryLeaf[leaf]);
 		    				genDisc[i]->SetBufferAlgorithm(ABM);
 		    				for(uint32_t n=0;n<nPrior;n++){
 		                        genDisc[i]->alphas[n] = alpha_values[n];
@@ -1103,8 +1104,8 @@ main (int argc, char *argv[])
 		for (int fromLeafId = 1; fromLeafId < LEAF_COUNT; fromLeafId ++)
 	    {
                         std::cout << "fromLeafId=" << fromLeafId << std::endl;
-			//install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
-			install_applications_simple_noincast_bursty(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+			install_applications_simple_noincast_continuous(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
+			// install_applications_simple_noincast_bursty(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// install_applications(fromLeafId, servers, requestRate, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
 			// if (queryRequestRate>0 && requestSize>0){
 			// 	install_applications_incast(fromLeafId, servers, queryRequestRate,requestSize, cdfTable, flowCount, SERVER_COUNT, LEAF_COUNT, QUERY_START_TIME, END_TIME, FLOW_LAUNCH_END_TIME,nPrior);
