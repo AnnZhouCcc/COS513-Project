@@ -67,7 +67,7 @@ cd $NS3
 
 TCP=$CUBIC
 ALG=$DT
-N=0
+version=12
 NUMSINKS=2
 
 # for LOAD in 0.9 ;do
@@ -76,6 +76,6 @@ NUMSINKS=2
 # 	./waf --run "simple-noincast-continuous --load=$LOAD --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --serverCount=$SERVERS --spineCount=$SPINES --leafCount=$LEAVES --linkCount=$LINKS --spineLeafCapacity=$LEAF_SPINE_CAP --leafServerCapacity=$SERVER_LEAF_CAP --linkLatency=$LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --statBuf=$STATIC_BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --request=$BURST_SIZE --queryRequestRate=$BURST_FREQ --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --alphaUpdateInterval=$ALPHA_UPDATE_INT --fctOutFile=$FLOWFILE --torOutFile=$TORFILE"
 # done
 
-FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$N.fct"
-TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$N.stat"
+FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$version.fct"
+TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$version.stat"
 ./waf --run "star-simple --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatency=$LEAF_SINK_LATENCY --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --statBuf=$STATIC_BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE"

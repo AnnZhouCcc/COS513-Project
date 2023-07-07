@@ -29,8 +29,8 @@ SERVER_LEAF_CAP=1
 LEAF_SPINE_CAP=1
 LATENCY=10
 
-RED_MIN=65
-RED_MAX=65
+RED_MIN=10
+RED_MAX=10
 
 N_PRIO=1 # Changed this
 
@@ -54,19 +54,19 @@ FLOW_END_TIME=8
 cd $NS3
 
 
-N=0
+version=1
 
 # 20 exps
 BURST_SIZES=0.9
 BURST_SIZE=$(python3 -c "print($BURST_SIZES*$BUFFER)")
 BURST_FREQ=3
 
-TCP=$DCTCP
+TCP=$CUBIC
 ALG=$DT
 
 for LOAD in 0.9 ;do
-	FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ.fct"
-	TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ.stat"
+	FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ-$version.fct"
+	TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ-$version.stat"
 	./waf --run "simple-noincast-continuous --load=$LOAD --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --serverCount=$SERVERS --spineCount=$SPINES --leafCount=$LEAVES --linkCount=$LINKS --spineLeafCapacity=$LEAF_SPINE_CAP --leafServerCapacity=$SERVER_LEAF_CAP --linkLatency=$LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --statBuf=$STATIC_BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --request=$BURST_SIZE --queryRequestRate=$BURST_FREQ --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --alphaUpdateInterval=$ALPHA_UPDATE_INT --fctOutFile=$FLOWFILE --torOutFile=$TORFILE"
 done
 
