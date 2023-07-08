@@ -52,9 +52,9 @@ BUFFER_PER_PORT_PER_GBPS=0.8 #9.6 # https://baiwei0427.github.io/papers/bcc-ton.
 # BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*($SERVERS+$LINKS*$SPINES)*$SERVER_LEAF_CAP))")
 BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*(10*$SERVER_LEAF_CAP+1*$LEAF_SINK_CAP)))")
 
-START_TIME=2
-END_TIME=10
-FLOW_END_TIME=8
+# START_TIME=2
+# END_TIME=10
+# FLOW_END_TIME=8
 
 
 cd $NS3
@@ -67,7 +67,7 @@ cd $NS3
 
 TCP=$CUBIC
 ALG=$DT
-version=12
+version=0
 NUMSINKS=2
 
 # for LOAD in 0.9 ;do
@@ -78,4 +78,4 @@ NUMSINKS=2
 
 FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$version.fct"
 TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$version.stat"
-./waf --run "star-simple --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatency=$LEAF_SINK_LATENCY --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --statBuf=$STATIC_BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE"
+./waf --run "star-burst-tolerance --numSinks=$NUMSINKS --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatency=$LEAF_SINK_LATENCY --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --statBuf=$STATIC_BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE"

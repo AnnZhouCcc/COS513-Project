@@ -139,12 +139,12 @@ main (int argc, char *argv[])
 {
 	CommandLine cmd;
 
-	double START_TIME = 10;
-	double FLOW_LAUNCH_END_TIME = 13;
-	double END_TIME = 20;
-	cmd.AddValue ("StartTime", "Start time of the simulation", START_TIME);
-	cmd.AddValue ("EndTime", "End time of the simulation", END_TIME);
-	cmd.AddValue ("FlowLaunchEndTime", "End time of the flow launch period", FLOW_LAUNCH_END_TIME);
+	double START_TIME = 2;
+	double FLOW_LAUNCH_END_TIME = 20;
+	double END_TIME = 22;
+	// cmd.AddValue ("StartTime", "Start time of the simulation", START_TIME);
+	// cmd.AddValue ("EndTime", "End time of the simulation", END_TIME);
+	// cmd.AddValue ("FlowLaunchEndTime", "End time of the flow launch period", FLOW_LAUNCH_END_TIME);
 
 	unsigned randomSeed = 8;
 	cmd.AddValue ("randomSeed", "Random seed, 0 for random generated", randomSeed);
@@ -209,7 +209,7 @@ main (int argc, char *argv[])
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
-	int numNodes = 2;
+	int numNodes = 10;
 
 	fctOutput = asciiTraceHelper.CreateFileStream (fctOutFile);
 
@@ -233,8 +233,7 @@ main (int argc, char *argv[])
 	for (int i=0; i<(numSinks+numNodes); i++) {
 		for (int j=0; j<nPrior; j++) {
 			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_qSize";
-			// AnnC: [artemis-star-topology] How is this threshold not throughput?
-			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_threshold";
+			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_throughput";
 			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_sentBytes";
 			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_droppedBytes";
 			*torStats->GetStream () << " port_" << i << "_queue_" << j <<"_maxSize";
@@ -548,30 +547,15 @@ main (int argc, char *argv[])
 	init_cdf (cdfTable);
 	load_cdf (cdfTable, cdfFileName.c_str ());
 
-	uint32_t nodetosink[numNodes] = {0,1};
+	uint32_t nodetosink[numNodes] = {0,0,0,0,0,0,0,0,0,1};
 	uint32_t portnumber = 9;
 	uint32_t flowcount = 0;
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
-	for (uint32_t node=0; node<numNodes; node++) {
-		//double startTime = START_TIME + poission_gen_interval(0.2);
-		//while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
-		//	startTime = START_TIME + poission_gen_interval(0.2);
-		//}
-
-		//uint64_t flowSize = 1e9;
-		uint64_t flowSize = gen_random_cdf(cdfTable);
-		while (flowSize == 0) { 
-			flowSize = gen_random_cdf(cdfTable); 
-		}
-		double startTime = START_TIME;
-		if (node==0) {
-			startTime += 1;
-		} else if (node==1) {
-			startTime += 4;
-			//flowSize = 1e9;
-		}
-
+	// Install continuous flows
+	for (uint32_t node=0; node<numNodes-1; node++) {
+		uint64_t flowSize = 1e9;
+		double startTime = START_TIME + node*0.1;
 		// ACK packets are prioritized
 		uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
 
@@ -607,8 +591,55 @@ main (int argc, char *argv[])
 		sinkApp.Start(Seconds(0));
 		sinkApp.Stop(Seconds(END_TIME));
 		sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
-
+		
 		portnumber++;
+	}
+
+	// Install bursty flows
+	uint32_t node = 9;
+	uint32_t sink = nodetosink[node];
+	InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
+	Address sinkAddress(ad);
+	double startTime = START_TIME + numNodes + poission_gen_interval(0.2);
+	while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME) {
+		uint64_t flowSize = gen_random_cdf(cdfTable);
+		while (flowSize == 0) { 
+			flowSize = gen_random_cdf(cdfTable); 
+		}
+
+		// ACK packets are prioritized
+		uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);	
+		
+		std::cout << "Sending from node " << node << " to sink " << sink << ": ";
+		std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
+
+		Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+		bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+		bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
+		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+		bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+		bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
+		bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
+		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
+		bulksend->SetStartTime (Seconds(startTime));
+		bulksend->SetStopTime (Seconds (END_TIME));
+		nodecontainers.Get(node)->AddApplication(bulksend);
+
+		PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
+		ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
+		sinkApp.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+		sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+		sinkApp.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
+		sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
+		// ACK packets are prioritized
+		sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
+		sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
+		sinkApp.Start(Seconds(0));
+		sinkApp.Stop(Seconds(END_TIME));
+		sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+
+		startTime += poission_gen_interval(0.2);
 	}
 
 
