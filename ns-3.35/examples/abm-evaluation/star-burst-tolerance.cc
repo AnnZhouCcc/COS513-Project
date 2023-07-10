@@ -56,7 +56,7 @@ extern "C"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("STAR_SIMPLE");
+NS_LOG_COMPONENT_DEFINE ("STAR_BURST_TOLERANCE");
 
 double alpha_values[8]={1};
 
@@ -140,8 +140,8 @@ main (int argc, char *argv[])
 	CommandLine cmd;
 
 	double START_TIME = 2;
-	double FLOW_LAUNCH_END_TIME = 20;
-	double END_TIME = 22;
+	double FLOW_LAUNCH_END_TIME = 12;
+	double END_TIME = 15;
 	// cmd.AddValue ("StartTime", "Start time of the simulation", START_TIME);
 	// cmd.AddValue ("EndTime", "End time of the simulation", END_TIME);
 	// cmd.AddValue ("FlowLaunchEndTime", "End time of the flow launch period", FLOW_LAUNCH_END_TIME);
@@ -547,13 +547,15 @@ main (int argc, char *argv[])
 	init_cdf (cdfTable);
 	load_cdf (cdfTable, cdfFileName.c_str ());
 
-	uint32_t nodetosink[numNodes] = {0,0,0,0,0,0,0,0,0,1};
+	uint32_t nodetosink[numNodes] = {0,0,0,0,0,1,1,1,1,1};
+	uint32_t numContinuous = 5;
+	uint32_t numBursty = 5;
 	uint32_t portnumber = 9;
 	uint32_t flowcount = 0;
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	// Install continuous flows
-	for (uint32_t node=0; node<numNodes-1; node++) {
+	for (uint32_t node=0; node<numContinuous; node++) {
 		uint64_t flowSize = 1e9;
 		double startTime = START_TIME + node*0.1;
 		// ACK packets are prioritized
@@ -596,20 +598,22 @@ main (int argc, char *argv[])
 	}
 
 	// Install bursty flows
-	uint32_t node = 9;
-	uint32_t sink = nodetosink[node];
-	InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
-	Address sinkAddress(ad);
-	double startTime = START_TIME + numNodes + poission_gen_interval(0.2);
-	while (startTime < FLOW_LAUNCH_END_TIME && startTime > START_TIME) {
+	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
 		uint64_t flowSize = gen_random_cdf(cdfTable);
 		while (flowSize == 0) { 
 			flowSize = gen_random_cdf(cdfTable); 
 		}
-
+		double startTime = START_TIME + 1 + poission_gen_interval(0.2);
+		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+			startTime = START_TIME + 1 + poission_gen_interval(0.2);
+		}
 		// ACK packets are prioritized
-		uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);	
-		
+		uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
+
+		uint32_t sink = nodetosink[node];
+		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
+		Address sinkAddress(ad);
+
 		std::cout << "Sending from node " << node << " to sink " << sink << ": ";
 		std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
 
@@ -617,13 +621,13 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
 		bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
 		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
-		bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+        bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
 		bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
 		bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 		bulksend->SetStartTime (Seconds(startTime));
-		bulksend->SetStopTime (Seconds (END_TIME));
+        bulksend->SetStopTime (Seconds (END_TIME));
 		nodecontainers.Get(node)->AddApplication(bulksend);
 
 		PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
@@ -638,8 +642,8 @@ main (int argc, char *argv[])
 		sinkApp.Start(Seconds(0));
 		sinkApp.Stop(Seconds(END_TIME));
 		sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
-
-		startTime += poission_gen_interval(0.2);
+		
+		portnumber++;
 	}
 
 
