@@ -209,7 +209,7 @@ main (int argc, char *argv[])
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
-	int numNodes = 10;
+	int numNodes = 20;
 
 	fctOutput = asciiTraceHelper.CreateFileStream (fctOutFile);
 
@@ -547,9 +547,9 @@ main (int argc, char *argv[])
 	init_cdf (cdfTable);
 	load_cdf (cdfTable, cdfFileName.c_str ());
 
-	uint32_t nodetosink[numNodes] = {0,0,0,0,0,1,1,1,1,1};
-	uint32_t numContinuous = 5;
-	uint32_t numBursty = 5;
+	uint32_t nodetosink[numNodes] = {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
+	uint32_t numContinuous = 10;
+	uint32_t numBursty = 10;
 	uint32_t portnumber = 9;
 	uint32_t flowcount = 0;
 	srand(randomSeed);
@@ -578,6 +578,7 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 		bulksend->SetStartTime (Seconds(startTime));
+		std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
         bulksend->SetStopTime (Seconds (END_TIME));
 		nodecontainers.Get(node)->AddApplication(bulksend);
 
@@ -590,7 +591,7 @@ main (int argc, char *argv[])
 		// ACK packets are prioritized
 		sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
 		sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
-		sinkApp.Start(Seconds(0));
+		sinkApp.Start(Seconds(startTime));
 		sinkApp.Stop(Seconds(END_TIME));
 		sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
 		
@@ -627,6 +628,7 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 		bulksend->SetStartTime (Seconds(startTime));
+		std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
         bulksend->SetStopTime (Seconds (END_TIME));
 		nodecontainers.Get(node)->AddApplication(bulksend);
 
@@ -639,7 +641,7 @@ main (int argc, char *argv[])
 		// ACK packets are prioritized
 		sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
 		sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
-		sinkApp.Start(Seconds(0));
+		sinkApp.Start(Seconds(startTime));
 		sinkApp.Stop(Seconds(END_TIME));
 		sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
 		
