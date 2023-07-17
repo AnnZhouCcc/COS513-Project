@@ -45,12 +45,14 @@ CDFNAME="WS"
 
 # ALPHA_UPDATE_INT=1 # 1 RTT
 
+NUMSINKS=2
+NUMNODES=20
 
 STATIC_BUFFER=0
 # BUFFER=$(( 1000*1000*9  ))
 BUFFER_PER_PORT_PER_GBPS=0.05 #9.6 # https://baiwei0427.github.io/papers/bcc-ton.pdf (Trident 2)
 # BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*($SERVERS+$LINKS*$SPINES)*$SERVER_LEAF_CAP))")
-BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*(10*$SERVER_LEAF_CAP+1*$LEAF_SINK_CAP)))")
+BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*($NUMNODES*$SERVER_LEAF_CAP+$NUMSINKS*$LEAF_SINK_CAP)))")
 
 # START_TIME=2
 # END_TIME=10
@@ -68,7 +70,6 @@ cd $NS3
 TCP=$CUBIC
 ALG=$DT
 version=9
-NUMSINKS=2
 
 # for LOAD in 0.9 ;do
 # 	FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ.fct"
@@ -78,4 +79,4 @@ NUMSINKS=2
 
 FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$version.fct"
 TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$version.stat"
-./waf --run "star-burst-tolerance --numSinks=$NUMSINKS --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatency=$LEAF_SINK_LATENCY --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --statBuf=$STATIC_BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE"
+./waf --run "star-burst-tolerance --numSinks=$NUMSINKS --numNodes=$NUMNODES --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatency=$LEAF_SINK_LATENCY --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --statBuf=$STATIC_BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE"

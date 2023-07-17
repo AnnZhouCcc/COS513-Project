@@ -206,10 +206,12 @@ main (int argc, char *argv[])
 	uint32_t numSinks = 1;
 	cmd.AddValue ("numSinks", "number of sinks", numSinks);
 
+	uint32_t numNodes = 20;
+	cmd.AddValue ("numNodes", "number of nodes", numNodes);
+
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
-	int numNodes = 20;
 
 	fctOutput = asciiTraceHelper.CreateFileStream (fctOutFile);
 
@@ -273,8 +275,7 @@ main (int argc, char *argv[])
 	alpha_values[2] = 1; //for bursty flows
 	aFile.close();
 
-	// AnnC: [artemis-star-topology] Uncertain what the calculation is for.
-	double RTTBytes = (serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatency)*2*1e3/8;
+	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatency)*GIGA*1e-6)*2/8;
 	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
 	baseRTTNano = (serverLeafLinkLatency+leafSinkLinkLatency)*2*1e3;
 	// nicBw = serverLeafCapacity+leafSinkCapacity;
