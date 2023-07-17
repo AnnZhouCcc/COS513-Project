@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 dir = "/u/az6922/data/"
-file = dir + "tor-single-1-101-6.stat"
-plotname = "bt-mixflow-mixalpha"
+file = dir + "tor-single-1-101-9.stat"
+plotname = "bt-bursty-mixalpha-smallbuffer"
 
 #df = pd.read_csv(file, delim_whitespace=True)
 
@@ -84,10 +84,10 @@ def plot_all_range(numqueues,plotstart,plotend):
 	plt.savefig(dir+"star_simple_plot_all_"+str(plotstart)+"_"+str(plotend)+".pdf")
 
 
-def plot_sink_range(numsenders,numsinks,plotstart,plotend):
-	queue_start = numsenders
-	queue_end = numsenders + numsinks
-	numqueues = numsenders + numsinks
+def plot_sink_range(numsenders,numsinks,numqueuespport,plotstart,plotend):
+	queue_start = numsenders * numqueuespport
+	queue_end = (numsenders + numsinks) * numqueuespport
+	numqueues = (numsenders + numsinks) * numqueuespport
 	qsize_list_arr = []
 	for i in range(numqueues):
 		qsize_list_arr.append(list())
@@ -108,7 +108,9 @@ def plot_sink_range(numsenders,numsinks,plotstart,plotend):
 	plt.figure().set_figwidth(15)
 	plt.plot(time_list[plotstart:plotend],buffer_list[plotstart:plotend],label="occupied buffer")
 	for i in range(queue_start, queue_end):
-		plt.plot(time_list[plotstart:plotend],qsize_list_arr[i][plotstart:plotend],label="port"+str(i)+" qsize")
+		port_index = i/5
+		queue_index = i%5
+		plt.plot(time_list[plotstart:plotend],qsize_list_arr[i][plotstart:plotend],label="port"+str(port_index)+" queue "+str(queue_index))
 	plt.title("buffer & qsize of sink ports over time ["+str(plotstart)+","+str(plotend)+"]")
 	plt.legend()
 	plt.savefig(dir+"star_"+plotname+"_plot_sink_"+str(plotstart)+"_"+str(plotend)+".pdf")
@@ -215,12 +217,41 @@ def plot_separate(numqueues, offset, name):
 	plt.savefig(dir+"star_"+plotname+"_plot_separate_"+name+".pdf")
 
 
+# sentbytes: plot_generic(10, 2, "sentbytes")
+# droppedbytes: plot_generic(10,3,"droppedbytes")
+def plot_sink_separate(numqueues, queuestart, queueend, offset, name):
+	qsize_list_arr = []
+	for i in range(numqueues):
+		qsize_list_arr.append(list())
+	buffer_list = list()
+	time_list = list()
+	with open(file) as f:
+		line_count = -1
+		for line in f:
+			line_count += 1
+			if line_count <= 0: continue
+			array = [x for x in line.split()]
+			buffer_list.append(float(array[2])*float(array[1])*10000)
+			time_list.append(int(array[0])-2000000000)
+			for i in range(queuestart,queueend):
+				qsize_list_arr[i].append(float(array[3+5*i+offset]))
+
+	fig, axs = plt.subplots(queueend-queuestart, figsize=(15,6*(queueend-queuestart)))
+	fig.suptitle(name+" of all ports over time")
+	for i in range(queuestart,queueend):
+		axs[i-queuestart].plot(time_list,qsize_list_arr[i])
+		plt.title("queue index "+str(i)+" "+name)
+	plt.savefig(dir+"star_"+plotname+"_plot_sink_separate_"+name+".pdf")
+
+
 if __name__ == "__main__":
 	#plot_generic(4,3,"droppedbytes")
 	#plot_generic(22,2,"sentbytes")
 	#plot_generic(4,1,"throughput")
-	plot_all(22)
+	#plot_all(22)
 	#plot_all_range(4,5250000,5350000)
-	#plot_sink_range(20,2,0,13000000)
+	#plot_sink_range(20,2,3,0,13000000)
 	#plot_separate(22,2,"sentbytes")
 	#plot_separate(22,3,"droppedbytes")
+	plot_sink_separate(66,60,66,2,"sentbytes")
+	plot_sink_separate(66,60,66,3,"droppedbytes")

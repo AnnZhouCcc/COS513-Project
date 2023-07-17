@@ -5,7 +5,7 @@ tcpname = "cubic"
 #version = 8
 dir = "/u/az6922/data/"
 #file = dir + "tor-simple-noincast-continuous-"+tcpname+"-"+str(version)+".stat"
-file = dir + "tor-single-1-101-0.9-0.9-3-1.stat"
+file = dir + "tor-single-1-101-0.9-0.9-3-20.stat"
 
 #df = pd.read_csv(file, delim_whitespace=True)
 
