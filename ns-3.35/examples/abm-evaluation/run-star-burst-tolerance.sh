@@ -37,7 +37,7 @@ LEAF_SINK_LATENCY=10
 RED_MIN=10
 RED_MAX=10
 
-N_PRIO=1 # Changed this
+N_PRIO=3 # Changed this
 
 ALPHAFILE="$DIR/alphas"
 CDFFILE="$DIR/websearch.txt"
@@ -48,7 +48,7 @@ CDFNAME="WS"
 
 STATIC_BUFFER=0
 # BUFFER=$(( 1000*1000*9  ))
-BUFFER_PER_PORT_PER_GBPS=0.8 #9.6 # https://baiwei0427.github.io/papers/bcc-ton.pdf (Trident 2)
+BUFFER_PER_PORT_PER_GBPS=0.05 #9.6 # https://baiwei0427.github.io/papers/bcc-ton.pdf (Trident 2)
 # BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*($SERVERS+$LINKS*$SPINES)*$SERVER_LEAF_CAP))")
 BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*(10*$SERVER_LEAF_CAP+1*$LEAF_SINK_CAP)))")
 
@@ -67,7 +67,7 @@ cd $NS3
 
 TCP=$CUBIC
 ALG=$DT
-version=0
+version=9
 NUMSINKS=2
 
 # for LOAD in 0.9 ;do

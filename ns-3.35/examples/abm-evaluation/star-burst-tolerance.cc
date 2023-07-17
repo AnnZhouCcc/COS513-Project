@@ -181,7 +181,7 @@ main (int argc, char *argv[])
 	std::string sched = "roundRobin";
 	cmd.AddValue ("sched", "scheduling", sched);
 
-	uint32_t nPrior = 1; // number queues in switch ports
+	uint32_t nPrior = 3; // number queues in switch ports
 	cmd.AddValue ("nPrior", "number of priorities",nPrior);
 
 	std::string alphasFile="/home/vamsi/ABM-ns3/ns-3.35/examples/abm-evaluation/alphas"; // On lakewood
@@ -268,7 +268,9 @@ main (int argc, char *argv[])
 		p++;
 	}
 	// AnnC: hard-code alpha for the first queue to be 8
-	alpha_values[0] = 8;
+	alpha_values[0] = 8; //for ACK packets
+	alpha_values[1] = 8; //for continuous flows
+	alpha_values[2] = 1; //for bursty flows
 	aFile.close();
 
 	// AnnC: [artemis-star-topology] Uncertain what the calculation is for.
@@ -556,11 +558,12 @@ main (int argc, char *argv[])
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	// Install continuous flows
 	for (uint32_t node=0; node<numContinuous; node++) {
-		uint64_t flowSize = 1e9;
+		uint64_t flowSize = 1;
 		double startTime = START_TIME + node*0.1;
 		// ACK packets are prioritized
-		uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
-
+		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
+		uint64_t flowPriority = 1;
+		
 		uint32_t sink = nodetosink[node];
 		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
 		Address sinkAddress(ad);
@@ -609,7 +612,8 @@ main (int argc, char *argv[])
 			startTime = START_TIME + 1 + poission_gen_interval(0.2);
 		}
 		// ACK packets are prioritized
-		uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
+		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
+		uint64_t flowPriority = 2;
 
 		uint32_t sink = nodetosink[node];
 		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
