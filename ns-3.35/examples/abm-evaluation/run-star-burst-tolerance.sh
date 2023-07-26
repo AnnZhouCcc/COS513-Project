@@ -29,7 +29,7 @@ DCTCP=2
 # LEAF_SPINE_CAP=1
 # LATENCY=10
 
-SERVER_LEAF_CAP=10
+SERVER_LEAF_CAP=1
 LEAF_SINK_CAP=1
 SERVER_LEAF_LATENCY=1
 LEAF_SINK_LATENCY=10
@@ -50,7 +50,7 @@ NUMNODES=20
 
 STATIC_BUFFER=0
 # BUFFER=$(( 1000*1000*9  ))
-BUFFER_PER_PORT_PER_GBPS=0.05 #9.6 # https://baiwei0427.github.io/papers/bcc-ton.pdf (Trident 2)
+BUFFER_PER_PORT_PER_GBPS=0.5 #9.6 # https://baiwei0427.github.io/papers/bcc-ton.pdf (Trident 2)
 # BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*($SERVERS+$LINKS*$SPINES)*$SERVER_LEAF_CAP))")
 BUFFER=$(python3 -c "print(int($BUFFER_PER_PORT_PER_GBPS*1024*($NUMNODES*$SERVER_LEAF_CAP+$NUMSINKS*$LEAF_SINK_CAP)))")
 
@@ -69,7 +69,7 @@ cd $NS3
 
 TCP=$CUBIC
 ALG=$DT
-version=9
+version=23
 
 # for LOAD in 0.9 ;do
 # 	FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$LOAD-$BURST_SIZES-$BURST_FREQ.fct"

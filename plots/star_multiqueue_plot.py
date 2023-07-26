@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 dir = "/u/az6922/data/"
-file = dir + "tor-single-1-101-9.stat"
-plotname = "bt-bursty-mixalpha-smallbuffer"
+file = dir + "tor-single-1-101-23.stat"
+plotname = "bt-cap1-br0p5"
 
 #df = pd.read_csv(file, delim_whitespace=True)
 
@@ -250,8 +250,8 @@ if __name__ == "__main__":
 	#plot_generic(4,1,"throughput")
 	#plot_all(22)
 	#plot_all_range(4,5250000,5350000)
-	#plot_sink_range(20,2,3,0,13000000)
+	plot_sink_range(20,2,3,0,10000000)
 	#plot_separate(22,2,"sentbytes")
 	#plot_separate(22,3,"droppedbytes")
-	plot_sink_separate(66,60,66,2,"sentbytes")
-	plot_sink_separate(66,60,66,3,"droppedbytes")
+	#plot_sink_separate(66,60,66,2,"sentbytes")
+	#plot_sink_separate(66,60,66,3,"droppedbytes")

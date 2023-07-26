@@ -140,8 +140,8 @@ main (int argc, char *argv[])
 	CommandLine cmd;
 
 	double START_TIME = 2;
-	double FLOW_LAUNCH_END_TIME = 12;
-	double END_TIME = 15;
+	double FLOW_LAUNCH_END_TIME = 9;
+	double END_TIME = 10;
 	// cmd.AddValue ("StartTime", "Start time of the simulation", START_TIME);
 	// cmd.AddValue ("EndTime", "End time of the simulation", END_TIME);
 	// cmd.AddValue ("FlowLaunchEndTime", "End time of the flow launch period", FLOW_LAUNCH_END_TIME);
@@ -559,7 +559,7 @@ main (int argc, char *argv[])
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	// Install continuous flows
 	for (uint32_t node=0; node<numContinuous; node++) {
-		uint64_t flowSize = 1;
+		uint64_t flowSize = 1e9;
 		double startTime = START_TIME + node*0.1;
 		// ACK packets are prioritized
 		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
