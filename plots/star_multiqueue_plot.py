@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 dir = "/u/az6922/data/"
-file = dir + "tor-single-1-101-23.stat"
-plotname = "bt-cap1-br0p5"
+file = dir + "tor-single-1-101-30.stat"
+plotname = "btfix-v30-step"
 
 #df = pd.read_csv(file, delim_whitespace=True)
 
@@ -236,6 +236,7 @@ def plot_sink_separate(numqueues, queuestart, queueend, offset, name):
 			for i in range(queuestart,queueend):
 				qsize_list_arr[i].append(float(array[3+5*i+offset]))
 
+	plt.clf()
 	fig, axs = plt.subplots(queueend-queuestart, figsize=(15,6*(queueend-queuestart)))
 	fig.suptitle(name+" of all ports over time")
 	for i in range(queuestart,queueend):
@@ -245,13 +246,14 @@ def plot_sink_separate(numqueues, queuestart, queueend, offset, name):
 
 
 if __name__ == "__main__":
+	plot_sink_range(20,2,3,0,10000000)
+	plot_sink_separate(66,60,66,2,"sentbytes")
+	plot_sink_separate(66,60,66,3,"droppedbytes")
+
 	#plot_generic(4,3,"droppedbytes")
 	#plot_generic(22,2,"sentbytes")
 	#plot_generic(4,1,"throughput")
 	#plot_all(22)
 	#plot_all_range(4,5250000,5350000)
-	plot_sink_range(20,2,3,0,10000000)
 	#plot_separate(22,2,"sentbytes")
 	#plot_separate(22,3,"droppedbytes")
-	#plot_sink_separate(66,60,66,2,"sentbytes")
-	#plot_sink_separate(66,60,66,3,"droppedbytes")
