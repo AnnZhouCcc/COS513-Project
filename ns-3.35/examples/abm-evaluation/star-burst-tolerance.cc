@@ -140,8 +140,8 @@ main (int argc, char *argv[])
 	CommandLine cmd;
 
 	double START_TIME = 2;
-	double FLOW_LAUNCH_END_TIME = 9;
-	double END_TIME = 10;
+	double FLOW_LAUNCH_END_TIME = 10;
+	double END_TIME = 12;
 	// cmd.AddValue ("StartTime", "Start time of the simulation", START_TIME);
 	// cmd.AddValue ("EndTime", "End time of the simulation", END_TIME);
 	// cmd.AddValue ("FlowLaunchEndTime", "End time of the flow launch period", FLOW_LAUNCH_END_TIME);
@@ -191,7 +191,7 @@ main (int argc, char *argv[])
 	cmd.AddValue ("cdfFileName", "File name for flow distribution", cdfFileName);
 	cmd.AddValue ("cdfName", "Name for flow distribution", cdfName);
 
-	uint32_t printDelay= 1e3;
+	uint32_t printDelay= 1e7;
 	cmd.AddValue("printDelay","printDelay in NanoSeconds", printDelay);
 
 	std::string fctOutFile="./fcts.txt";
@@ -560,7 +560,9 @@ main (int argc, char *argv[])
 	// Install continuous flows
 	for (uint32_t node=0; node<numContinuous; node++) {
 		uint64_t flowSize = 1e9;
-		double startTime = START_TIME + node*0.1;
+		//uint64_t flowSize = 1;
+		double startTime = START_TIME;
+		//double startTime = START_TIME + node*0.1;
 		// ACK packets are prioritized
 		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
 		uint64_t flowPriority = 1;
@@ -603,15 +605,22 @@ main (int argc, char *argv[])
 	}
 
 	// Install bursty flows
+	//double startTime = 4.5;
+	double startTime = START_TIME + 1 + poission_gen_interval(0.2);
+	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+		startTime = START_TIME + 1 + poission_gen_interval(0.2);
+	}
 	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
 		uint64_t flowSize = gen_random_cdf(cdfTable);
 		while (flowSize == 0) { 
 			flowSize = gen_random_cdf(cdfTable); 
 		}
-		double startTime = START_TIME + 1 + poission_gen_interval(0.2);
-		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
-			startTime = START_TIME + 1 + poission_gen_interval(0.2);
-		}
+		// AnnC: manually increase bursty flow size
+		//if (flowSize < 1e8) flowSize=flowSize*10;
+		//double startTime = START_TIME + 1 + poission_gen_interval(0.2);
+		//while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+		//	startTime = START_TIME + 1 + poission_gen_interval(0.2);
+		//}
 		// ACK packets are prioritized
 		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
 		uint64_t flowPriority = 2;
