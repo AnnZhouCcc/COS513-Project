@@ -227,6 +227,9 @@ main (int argc, char *argv[])
 	cmd.AddValue("continuousInitialWindow","initial window size for continuous flows",continuousIW);
 	cmd.AddValue("burstyInitialWindow","initial window size for bursty flows",burstyIW);
 
+	double burstyStartTime = 0;
+	cmd.AddValue("burstyStartTime","start time of bursty flows in ms; 0 for random",burstyStartTime);
+
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
@@ -634,8 +637,12 @@ main (int argc, char *argv[])
 	}
 
 	// Install bursty flows
-	//double startTime = 4.5;
-	double startTime = START_TIME + 1 + poission_gen_interval(0.2);
+	double startTime;
+	if (burstyStartTime == 0) {
+		startTime = START_TIME + 1 + poission_gen_interval(0.2);
+	} else {
+		startTime = burstyStartTime/1000;
+	}
 	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
 		startTime = START_TIME + 1 + poission_gen_interval(0.2);
 	}
