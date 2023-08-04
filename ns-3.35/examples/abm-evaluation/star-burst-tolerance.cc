@@ -200,6 +200,9 @@ main (int argc, char *argv[])
 	std::string torOutFile="./tor.txt";
 	cmd.AddValue ("torOutFile", "File path for ToR statistic", torOutFile);
 
+	std::string paramOutFile="./param.txt";
+	cmd.AddValue ("paramOutFile", "File path for parameters", paramOutFile);
+
 	uint32_t rto = 10*1000; // in MicroSeconds, 5 milliseconds.
 	cmd.AddValue ("rto", "min Retransmission timeout value in MicroSeconds", rto);
 
@@ -454,7 +457,6 @@ main (int argc, char *argv[])
 
 	int portid = 0;
 
-	std::cout << "checkpoint0" << std::endl;
 	std::cout << "serverLeafCapacity=" << serverLeafCapacity << ", leafSinkCapacity=" << leafSinkCapacity << std::endl;
 
 	PointToPointHelper accessLink;
@@ -465,23 +467,13 @@ main (int argc, char *argv[])
 	// }
 
 	/* Server <--> Leaf */
-	std::cout << "nodecontainers.GetN()=" << nodecontainers.GetN() << std::endl;
+	// std::cout << "nodecontainers.GetN()=" << nodecontainers.GetN() << std::endl;
 	for (uint32_t server=0; server<nodecontainers.GetN(); server++) {
-		std::cout << server << std::endl;
 		NetDeviceContainer netDeviceContainer = accessLink.Install(nodecontainers.Get(server), nd.Get(0));
-		std::cout << "netDeviceContainer.GetN()=" << netDeviceContainer.GetN() << std::endl;
-		std::cout << "netd0 " << netDeviceContainer.Get(0) << std::endl;
-		std::cout << "netd1 " << netDeviceContainer.Get(1) << std::endl;
 		QueueDiscContainer queuedisc = tc.Install(netDeviceContainer.Get(1));
-		std::cout << "queuedisc.getN()=" << queuedisc.GetN() << std::endl;
 		bottleneckQueueDiscs.Add(queuedisc.Get(0));
 		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
-		std::cout << queuedisc.Get(0) << " queuedisc0" << std::endl;
-		std::cout << portid << "before" << std::endl;
-		std::cout << genDisc << std::endl;
 		genDisc->SetPortId(portid++);
-		std::cout << "after" << std::endl;
-		std::cout << portid << "after" << std::endl;
 		// AnnC: [artemis-star-topology] Assume to be DT.
 		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
 		genDisc->setPortBw(serverLeafCapacity);
@@ -571,6 +563,9 @@ main (int argc, char *argv[])
 	init_cdf (cdfTable);
 	load_cdf (cdfTable, cdfFileName.c_str ());
 
+	std::ofstream paramfile;
+  	paramfile.open (paramOutFile);
+
 	uint32_t numContinuous = numContinuousFlows;
 	uint32_t numBursty = numBurstyFlows;
 	// sink0 receives continuous flows, sink1 receives bursty flows
@@ -603,8 +598,8 @@ main (int argc, char *argv[])
 		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
 		Address sinkAddress(ad);
 
-		std::cout << "Sending from node " << node << " to sink " << sink << ": ";
-		std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
+		paramfile << "Sending from node " << node << " to sink " << sink << ": ";
+		paramfile << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << "\n";
 
 		Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
 		bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
@@ -616,7 +611,7 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 		bulksend->SetStartTime (Seconds(startTime));
-		std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
+		// std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
         bulksend->SetStopTime (Seconds (END_TIME));
 		nodecontainers.Get(node)->AddApplication(bulksend);
 
@@ -665,8 +660,8 @@ main (int argc, char *argv[])
 		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
 		Address sinkAddress(ad);
 
-		std::cout << "Sending from node " << node << " to sink " << sink << ": ";
-		std::cout << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << std::endl;
+		paramfile << "Sending from node " << node << " to sink " << sink << ": ";
+		paramfile << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << "\n";
 
 		Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
 		bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
@@ -678,7 +673,7 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 		bulksend->SetStartTime (Seconds(startTime));
-		std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
+		// std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
         bulksend->SetStopTime (Seconds (END_TIME));
 		nodecontainers.Get(node)->AddApplication(bulksend);
 
@@ -697,6 +692,8 @@ main (int argc, char *argv[])
 		
 		portnumber++;
 	}
+
+	paramfile.close();
 
 
 	Simulator::Schedule(Seconds(START_TIME),StarTopologyInvokeToRStats,torStats, BufferSize, printDelay, nPrior);
