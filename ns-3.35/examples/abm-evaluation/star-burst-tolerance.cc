@@ -225,7 +225,7 @@ main (int argc, char *argv[])
 	uint32_t burstyIW = 4;
 	uint32_t continuousIW = 4;
 	cmd.AddValue("continuousInitialWindow","initial window size for continuous flows",continuousIW);
-	cmd.AddValue("burstInitialWindow","initial window size for bursty flows",burstyIW);
+	cmd.AddValue("burstyInitialWindow","initial window size for bursty flows",burstyIW);
 
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
