@@ -142,9 +142,9 @@ main (int argc, char *argv[])
 	double START_TIME = 2;
 	double FLOW_LAUNCH_END_TIME = 10;
 	double END_TIME = 12;
-	// cmd.AddValue ("StartTime", "Start time of the simulation", START_TIME);
-	// cmd.AddValue ("EndTime", "End time of the simulation", END_TIME);
-	// cmd.AddValue ("FlowLaunchEndTime", "End time of the flow launch period", FLOW_LAUNCH_END_TIME);
+	cmd.AddValue ("StartTime", "Start time of the simulation", START_TIME);
+	cmd.AddValue ("EndTime", "End time of the simulation", END_TIME);
+	cmd.AddValue ("FlowLaunchEndTime", "End time of the flow launch period", FLOW_LAUNCH_END_TIME);
 
 	unsigned randomSeed = 8;
 	cmd.AddValue ("randomSeed", "Random seed, 0 for random generated", randomSeed);
@@ -209,6 +209,24 @@ main (int argc, char *argv[])
 	uint32_t numNodes = 20;
 	cmd.AddValue ("numNodes", "number of nodes", numNodes);
 
+	double continuousAlpha = 1;
+	double burstyAlpha = 1;
+	cmd.AddValue("continuousAlpha","the alpha value for continuous flows",continuousAlpha);
+	cmd.AddValue("burstyAlpha","the alpha value for bursty flows",burstyAlpha);
+
+	uint32_t numContinuousFlows = 10;
+	uint32_t numBurstyFlows = 10;
+	cmd.AddValue("numContinuousFlows","number of continuous flows",numContinuousFlows);
+	cmd.AddValue("numBurstyFlows","number of bursty flows",numBurstyFlows);
+
+	uint32_t btMode = 0;
+	cmd.AddValue("btMode","whether continuous+bursty flows (#0) or bursty flows only (#1)",btMode);
+
+	uint32_t burstyIW = 4;
+	uint32_t continuousIW = 4;
+	cmd.AddValue("continuousInitialWindow","initial window size for continuous flows",continuousIW);
+	cmd.AddValue("burstInitialWindow","initial window size for bursty flows",burstyIW);
+
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
@@ -247,7 +265,7 @@ main (int argc, char *argv[])
 	// AnnC: [artemis-star-topology] Not supporting static buffer for now.
 	// uint32_t staticBuffer = (double) BufferSize*statBuf/(SERVER_COUNT+SPINE_COUNT*LINK_COUNT);
 	uint32_t staticBuffer = 0;
-	BufferSize = BufferSize - staticBuffer; // BufferSize is the buffer pool which is available for sharing
+	// BufferSize = BufferSize - staticBuffer; // BufferSize is the buffer pool which is available for sharing
 	if(UseEcn){
 		ecnEnabled = "EcnEnabled";
 	}
@@ -271,8 +289,8 @@ main (int argc, char *argv[])
 	}
 	// AnnC: hard-code alpha for the first queue to be 8
 	alpha_values[0] = 8; //for ACK packets
-	alpha_values[1] = 8; //for continuous flows
-	alpha_values[2] = 1; //for bursty flows
+	alpha_values[1] = continuousAlpha; //for continuous flows
+	alpha_values[2] = burstyAlpha; //for bursty flows
 	aFile.close();
 
 	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatency)*GIGA*1e-6)*2/8;
@@ -550,17 +568,28 @@ main (int argc, char *argv[])
 	init_cdf (cdfTable);
 	load_cdf (cdfTable, cdfFileName.c_str ());
 
+	uint32_t numContinuous = numContinuousFlows;
+	uint32_t numBursty = numBurstyFlows;
+	// sink0 receives continuous flows, sink1 receives bursty flows
 	uint32_t nodetosink[numNodes] = {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
-	uint32_t numContinuous = 10;
-	uint32_t numBursty = 10;
+	for (uint32_t i=0; i<numContinuous; i++) {
+		nodetosink[i] = 0;
+	}
+	for (uint32_t i=numContinuous; i<numContinuous+numBursty; i++) {
+		nodetosink[i] = 1;
+	}
 	uint32_t portnumber = 9;
 	uint32_t flowcount = 0;
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	// Install continuous flows
 	for (uint32_t node=0; node<numContinuous; node++) {
-		uint64_t flowSize = 1e9;
-		//uint64_t flowSize = 1;
+		uint64_t flowSize;
+		if (btMode == 0) {
+			flowSize = 1e9;
+		} else if (btMode == 1) {
+			flowSize = 1;
+		}
 		double startTime = START_TIME;
 		//double startTime = START_TIME + node*0.1;
 		// ACK packets are prioritized
@@ -580,7 +609,7 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
         bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
 		bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
-		bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+		bulksend->SetAttribute("InitialCwnd", UintegerValue (continuousIW));
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 		bulksend->SetStartTime (Seconds(startTime));
@@ -638,7 +667,7 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
         bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
 		bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
-		bulksend->SetAttribute("InitialCwnd", UintegerValue (4));
+		bulksend->SetAttribute("InitialCwnd", UintegerValue (burstyIW));
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 		bulksend->SetStartTime (Seconds(startTime));
