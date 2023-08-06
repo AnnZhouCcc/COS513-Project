@@ -569,7 +569,7 @@ main (int argc, char *argv[])
 	uint32_t numContinuous = numContinuousFlows;
 	uint32_t numBursty = numBurstyFlows;
 	// sink0 receives continuous flows, sink1 receives bursty flows
-	uint32_t nodetosink[numNodes] = {0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1};
+	uint32_t nodetosink[numNodes] = {0};
 	for (uint32_t i=0; i<numContinuous; i++) {
 		nodetosink[i] = 0;
 	}
@@ -582,13 +582,13 @@ main (int argc, char *argv[])
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	// Install continuous flows
 	for (uint32_t node=0; node<numContinuous; node++) {
-		uint64_t flowSize;
+		uint64_t flowSize = 0;
 		if (btMode == 0) {
 			flowSize = 1e9;
 		} else if (btMode == 1) {
 			flowSize = 1;
 		} else if (btMode == 2) {
-			flowSize == 1e9;
+			flowSize = 1e9;
 		}
 		double startTime = START_TIME;
 		//double startTime = START_TIME + node*0.1;
@@ -645,7 +645,7 @@ main (int argc, char *argv[])
 		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
 	}
 	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
-		uint64_t flowSize;
+		uint64_t flowSize = 0;
 		if (btMode == 0) {
 			flowSize = gen_random_cdf(cdfTable);
 			while (flowSize == 0) { 
@@ -657,7 +657,7 @@ main (int argc, char *argv[])
 				flowSize = gen_random_cdf(cdfTable); 
 			}
 		} else if (btMode == 2) {
-			flowSize == 1;
+			flowSize = 1;
 		}
 		// AnnC: manually increase bursty flow size
 		//if (flowSize < 1e8) flowSize=flowSize*10;
