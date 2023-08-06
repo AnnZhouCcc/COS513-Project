@@ -25,3 +25,6 @@ def build(bld):
     obj = bld.create_ns3_program('star-burst-tolerance',
                                  ['point-to-point', 'traffic-control', 'internet', 'applications'])
     obj.source = ['star-burst-tolerance.cc', 'cdf.c']
+    obj = bld.create_ns3_program('star-reverse-bt',
+                                 ['point-to-point', 'traffic-control', 'internet', 'applications'])
+    obj.source = ['star-reverse-bt.cc', 'cdf.c']

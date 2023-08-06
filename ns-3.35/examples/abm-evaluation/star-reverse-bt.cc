@@ -223,7 +223,7 @@ main (int argc, char *argv[])
 	cmd.AddValue("numBurstyFlows","number of bursty flows",numBurstyFlows);
 
 	uint32_t btMode = 0;
-	cmd.AddValue("btMode","whether continuous+bursty flows (#0) or bursty flows only (#1)",btMode);
+	cmd.AddValue("btMode","whether continuous+bursty flows (#0) or bursty flows only (#1) or continuous flows only (#2)",btMode);
 
 	uint32_t burstyIW = 4;
 	uint32_t continuousIW = 4;
@@ -587,6 +587,8 @@ main (int argc, char *argv[])
 			flowSize = 1e9;
 		} else if (btMode == 1) {
 			flowSize = 1;
+		} else if (btMode == 2) {
+			flowSize == 1e9;
 		}
 		double startTime = START_TIME;
 		//double startTime = START_TIME + node*0.1;
@@ -634,17 +636,28 @@ main (int argc, char *argv[])
 	// Install bursty flows
 	double startTime;
 	if (burstyStartTime == 0) {
-		startTime = START_TIME + 1 + poission_gen_interval(0.2);
+		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
 	} else {
 		startTime = burstyStartTime/1000;
 	}
-	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
-		startTime = START_TIME + 1 + poission_gen_interval(0.2);
+	// AnnC: bursty flows start not too long after the continuous flows; hard-coded
+	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME || startTime >= START_TIME+5) {
+		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
 	}
 	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
-		uint64_t flowSize = gen_random_cdf(cdfTable);
-		while (flowSize == 0) { 
-			flowSize = gen_random_cdf(cdfTable); 
+		uint64_t flowSize;
+		if (btMode == 0) {
+			flowSize = gen_random_cdf(cdfTable);
+			while (flowSize == 0) { 
+				flowSize = gen_random_cdf(cdfTable); 
+			}
+		} else if (btMode == 1) {
+			flowSize = gen_random_cdf(cdfTable);
+			while (flowSize == 0) { 
+				flowSize = gen_random_cdf(cdfTable); 
+			}
+		} else if (btMode == 2) {
+			flowSize == 1;
 		}
 		// AnnC: manually increase bursty flow size
 		//if (flowSize < 1e8) flowSize=flowSize*10;
