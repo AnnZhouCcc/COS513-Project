@@ -224,8 +224,10 @@ main (int argc, char *argv[])
 	cmd.AddValue("numContinuousFlows","number of continuous flows",numContinuousFlows);
 	cmd.AddValue("numBurstyFlows","number of bursty flows",numBurstyFlows);
 
-	uint32_t btMode = 0;
-	cmd.AddValue("btMode","whether continuous+bursty flows (#0) or bursty flows only (#1) or continuous flows only (#2)",btMode);
+	uint32_t fsModeLongRTT = 0;
+	uint32_t fsModeShortRTT = 0;
+	cmd.AddValue("fsModeLongRTT","0:continuous flow, 1: bursty flow, 2: no flow",fsModeLongRTT);
+	cmd.AddValue("fsModeShortRTT","0:continuous flow, 1: bursty flow, 2: no flow",fsModeShortRTT);
 
 	uint32_t burstyIW = 4;
 	uint32_t continuousIW = 4;
@@ -654,12 +656,15 @@ main (int argc, char *argv[])
 	// Install continuous flows
 	for (uint32_t node=0; node<numContinuous; node++) {
 		uint64_t flowSize = 0;
-		if (btMode == 0) {
+		if (fsModeLongRTT == 0) {
 			flowSize = 1e9;
-		} else if (btMode == 1) {
+		} else if (fsModeLongRTT == 1) {
+			flowSize = gen_random_cdf(cdfTable);
+			while (flowSize == 0) { 
+				flowSize = gen_random_cdf(cdfTable); 
+			}
+		} else if (fsModeLongRTT == 2) {
 			flowSize = 1;
-		} else if (btMode == 2) {
-			flowSize = 1e9;
 		}
 		double startTime = START_TIME;
 		//double startTime = START_TIME + node*0.1;
@@ -717,17 +722,14 @@ main (int argc, char *argv[])
 	}
 	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
 		uint64_t flowSize = 0;
-		if (btMode == 0) {
+		if (fsModeShortRTT == 0) {
+			flowSize = 1e9;
+		} else if (fsModeShortRTT == 1) {
 			flowSize = gen_random_cdf(cdfTable);
 			while (flowSize == 0) { 
 				flowSize = gen_random_cdf(cdfTable); 
 			}
-		} else if (btMode == 1) {
-			flowSize = gen_random_cdf(cdfTable);
-			while (flowSize == 0) { 
-				flowSize = gen_random_cdf(cdfTable); 
-			}
-		} else if (btMode == 2) {
+		} else if (fsModeShortRTT == 2) {
 			flowSize = 1;
 		}
 		// AnnC: manually increase bursty flow size
