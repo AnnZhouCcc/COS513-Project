@@ -152,11 +152,13 @@ main (int argc, char *argv[])
 	uint64_t serverLeafCapacity = 1;
 	uint64_t leafSinkCapacity = 1;
 	double serverLeafLinkLatency = 10;
-	double leafSinkLinkLatency = 10;
+	double leafSinkLinkLatencyLongRTT = 10;
+	double leafSinkLinkLatencyShortRTT = 1;
 	cmd.AddValue("serverLeafCapacity", "Server <-> Leaf capacity in Gbps", serverLeafCapacity);
 	cmd.AddValue("leafSinkCapacity", "Leaf <-> Sink capacity in Gbps", leafSinkCapacity);
 	cmd.AddValue("serverLeafLinkLatency", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatency);
-	cmd.AddValue("leafSinkLinkLatency", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatency);
+	cmd.AddValue("leafSinkLinkLatencyLongRTT", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatencyLongRTT);
+	cmd.AddValue("leafSinkLinkLatencyShortRTT", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatencyShortRTT);
 
 	uint32_t TcpProt=CUBIC;
 	cmd.AddValue("TcpProt","Tcp protocol",TcpProt);
@@ -299,9 +301,9 @@ main (int argc, char *argv[])
 	alpha_values[2] = burstyAlpha; //for bursty flows
 	aFile.close();
 
-	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatency)*GIGA*1e-6)*2/8;
+	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatencyLongRTT + serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatencyShortRTT)*GIGA*1e-6)/8;
 	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
-	baseRTTNano = (serverLeafLinkLatency+leafSinkLinkLatency)*2*1e3;
+	baseRTTNano = (serverLeafLinkLatency*2+leafSinkLinkLatencyLongRTT+leafSinkLinkLatencyShortRTT)*1e3;
 	// nicBw = serverLeafCapacity+leafSinkCapacity;
 
     // Config::SetDefault("ns3::GenQueueDisc::updateInterval", UintegerValue(alphaUpdateInterval*linkLatency*8*1000));
@@ -494,7 +496,7 @@ main (int argc, char *argv[])
 	///////////////////////////////
 	PointToPointHelper bottleneckLinkLongRTT;
 	bottleneckLinkLongRTT.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
-	bottleneckLinkLongRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatency)));
+	bottleneckLinkLongRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatencyLongRTT)));
 	// if (dropTail) {
 	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
 	// }
@@ -562,7 +564,7 @@ main (int argc, char *argv[])
 	///////////////////////////////
 	PointToPointHelper bottleneckLinkShortRTT;
 	bottleneckLinkShortRTT.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
-	bottleneckLinkShortRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatency)));
+	bottleneckLinkShortRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatencyShortRTT)));
 	// if (dropTail) {
 	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
 	// }
