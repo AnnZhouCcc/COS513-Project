@@ -568,7 +568,6 @@ main (int argc, char *argv[])
 	// }
 
 	/* Leaf <--> Sink */
-	Ipv4InterfaceContainer nsInterface;
 	sink=1;
 	NetDeviceContainer devicesBottleneckLinkShortRTT = bottleneckLinkShortRTT.Install (nd.Get (0), sinkcontainers.Get (sink));
 	QueueDiscContainer qdiscsShortRTT = tc.Install (devicesBottleneckLinkShortRTT.Get(0));
