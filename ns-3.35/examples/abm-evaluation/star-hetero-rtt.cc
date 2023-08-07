@@ -672,6 +672,11 @@ main (int argc, char *argv[])
 				flowSize = gen_random_cdf(cdfTable); 
 			}
 		} else if (fsModeLongRTT == 2) {
+			// AnnC: for random size alignment
+			flowSize = gen_random_cdf(cdfTable);
+			while (flowSize == 0) { 
+				flowSize = gen_random_cdf(cdfTable); 
+			}
 			flowSize = 1;
 		}
 		// double startTime = START_TIME;
