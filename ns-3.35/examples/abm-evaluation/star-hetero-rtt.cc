@@ -234,7 +234,9 @@ main (int argc, char *argv[])
 	cmd.AddValue("continuousInitialWindow","initial window size for continuous flows",continuousIW);
 	cmd.AddValue("burstyInitialWindow","initial window size for bursty flows",burstyIW);
 
+	double continuousStartTime = 0;
 	double burstyStartTime = 0;
+	cmd.AddValue("continuousStartTime","start time of bursty flows in ms; 0 for random",continuousStartTime);
 	cmd.AddValue("burstyStartTime","start time of bursty flows in ms; 0 for random",burstyStartTime);
 
 	/*Parse CMD*/
@@ -654,6 +656,12 @@ main (int argc, char *argv[])
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	// Install continuous flows
+	double startTimeLongRTT = 0;
+	if (continuousStartTime == 0) {
+		startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
+	} else {
+		startTimeLongRTT = continuousStartTime/1000;
+	}
 	for (uint32_t node=0; node<numContinuous; node++) {
 		uint64_t flowSize = 0;
 		if (fsModeLongRTT == 0) {
@@ -666,7 +674,7 @@ main (int argc, char *argv[])
 		} else if (fsModeLongRTT == 2) {
 			flowSize = 1;
 		}
-		double startTime = START_TIME;
+		// double startTime = START_TIME;
 		//double startTime = START_TIME + node*0.1;
 		// ACK packets are prioritized
 		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
@@ -677,7 +685,7 @@ main (int argc, char *argv[])
 		Address sinkAddress(ad);
 
 		paramfile << "Sending from node " << node << " to sink " << sink << ": ";
-		paramfile << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << "\n";
+		paramfile << "startTime=" << startTimeLongRTT << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << "\n";
 
 		Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
 		bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
@@ -688,7 +696,7 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute("InitialCwnd", UintegerValue (continuousIW));
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
-		bulksend->SetStartTime (Seconds(startTime));
+		bulksend->SetStartTime (Seconds(startTimeLongRTT));
 		// std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
         bulksend->SetStopTime (Seconds (END_TIME));
 		nodecontainers.Get(node)->AddApplication(bulksend);
@@ -702,7 +710,7 @@ main (int argc, char *argv[])
 		// ACK packets are prioritized
 		sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
 		sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
-		sinkApp.Start(Seconds(startTime));
+		sinkApp.Start(Seconds(startTimeLongRTT));
 		sinkApp.Stop(Seconds(END_TIME));
 		sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
 		
@@ -710,7 +718,7 @@ main (int argc, char *argv[])
 	}
 
 	// Install bursty flows
-	double startTime;
+	double startTime = 0;
 	if (burstyStartTime == 0) {
 		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
 	} else {

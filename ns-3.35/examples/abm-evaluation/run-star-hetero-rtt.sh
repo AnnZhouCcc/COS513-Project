@@ -27,7 +27,7 @@ NONE=2
 
 SERVER_LEAF_CAP=10
 LEAF_SINK_CAP=1
-SERVER_LEAF_LATENCY=10000
+SERVER_LEAF_LATENCY=100
 LEAF_SINK_LATENCY_LONG_RTT=10000
 LEAF_SINK_LATENCY_SHORT_RTT=200
 
@@ -41,9 +41,9 @@ CDFFILE="$DIR/websearch.txt"
 CDFNAME="WS"
 
 NUMSINKS=2
-NUMNODES=11
+NUMNODES=2
 
-BUFFER=7000000
+BUFFER=1000000
 
 START_TIME=2
 END_TIME=12
@@ -51,23 +51,24 @@ FLOW_END_TIME=10
 
 TCP=$CUBIC
 ALG=$DT
-version=7
+version=0
 
 CONTA=1
-BURSTA=8
+BURSTA=1
 
 NUMCONTFLOWS=1
-NUMBURSTFLOWS=10
+NUMBURSTFLOWS=1
 
 FSMODELONGRTT=$CONTINUOUS
 FSMODESHORTRTT=$CONTINUOUS
 
-BURSTIW=500
+BURSTIW=4
 CONTIW=4
 
-BURSTSTARTMS=0
+CONTSTARTMS=2000
+BURSTSTARTMS=2000
 
 FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$version.fct"
 TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$version.stat"
 PARAMFILE="$DUMP_DIR/param-single-$TCP-$ALG-$version.txt"
-./waf --run "star-hetero-rtt --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --numNodes=$NUMNODES --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatencyLongRTT=$LEAF_SINK_LATENCY_LONG_RTT --leafSinkLinkLatencyShortRTT=$LEAF_SINK_LATENCY_SHORT_RTT --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE --paramOutFile=$PARAMFILE --continuousAlpha=$CONTA --burstyAlpha=$BURSTA --numContinuousFlows=$NUMCONTFLOWS --numBurstyFlows=$NUMBURSTFLOWS --fsModeLongRTT=$FSMODELONGRTT --fsModeShortRTT=$FSMODESHORTRTT --continuousInitialWindow=$CONTIW --burstyInitialWindow=$BURSTIW --burstyStartTime=$BURSTSTARTMS"
+./waf --run "star-hetero-rtt --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --numNodes=$NUMNODES --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatencyLongRTT=$LEAF_SINK_LATENCY_LONG_RTT --leafSinkLinkLatencyShortRTT=$LEAF_SINK_LATENCY_SHORT_RTT --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE --paramOutFile=$PARAMFILE --continuousAlpha=$CONTA --burstyAlpha=$BURSTA --numContinuousFlows=$NUMCONTFLOWS --numBurstyFlows=$NUMBURSTFLOWS --fsModeLongRTT=$FSMODELONGRTT --fsModeShortRTT=$FSMODESHORTRTT --continuousInitialWindow=$CONTIW --burstyInitialWindow=$BURSTIW --continuousStartTime=$CONTSTARTMS --burstyStartTime=$BURSTSTARTMS"
