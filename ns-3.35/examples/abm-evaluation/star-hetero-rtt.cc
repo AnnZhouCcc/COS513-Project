@@ -724,10 +724,6 @@ main (int argc, char *argv[])
 	} else {
 		startTime = burstyStartTime/1000;
 	}
-	// AnnC: bursty flows start not too long after the continuous flows; hard-coded
-	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME || startTime >= START_TIME+5) {
-		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
-	}
 	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
 		uint64_t flowSize = 0;
 		if (fsModeShortRTT == 0) {
