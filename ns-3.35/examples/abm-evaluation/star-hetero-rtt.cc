@@ -56,7 +56,7 @@ extern "C"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("STAR_BURST_TOLERANCE");
+NS_LOG_COMPONENT_DEFINE ("STAR_HETERO_RTT");
 
 double alpha_values[8]={1};
 
@@ -489,70 +489,140 @@ main (int argc, char *argv[])
 	std::cout << "done with server<->leaf links" << std::endl;
 
 
-	PointToPointHelper bottleneckLink;
-	bottleneckLink.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
-	bottleneckLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatency)));
+	///////////////////////////////
+	// A bottleneck link with long RTT
+	///////////////////////////////
+	PointToPointHelper bottleneckLinkLongRTT;
+	bottleneckLinkLongRTT.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
+	bottleneckLinkLongRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatency)));
 	// if (dropTail) {
 	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
 	// }
 
 	/* Leaf <--> Sink */
 	Ipv4InterfaceContainer nsInterface;
-	for (uint32_t sink=0; sink<numSinks; sink++) {
-		NetDeviceContainer devicesBottleneckLink = bottleneckLink.Install (nd.Get (0), sinkcontainers.Get (sink));
-		QueueDiscContainer qdiscs = tc.Install (devicesBottleneckLink.Get(0));
-		bottleneckQueueDiscs.Add(qdiscs.Get(0));
-		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
-		genDisc->SetPortId(portid++);
-		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		genDisc->setPortBw(leafSinkCapacity);
-		genDisc->SetSharedMemory(sharedMemory);
-		switch(algorithm){
-			case DT:
-				genDisc->SetBufferAlgorithm(DT);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-				}
-				break;
-			case FAB:
-				genDisc->SetBufferAlgorithm(FAB);
-				genDisc->SetFabWindow(MicroSeconds(5000));
-				genDisc->SetFabThreshold(15*PACKET_SIZE);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-				}
-				break;
-			case CS:
-				genDisc->SetBufferAlgorithm(CS);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-				}
-				break;
-			case IB:
-				genDisc->SetBufferAlgorithm(IB);
-				genDisc->SetAfdWindow(MicroSeconds(50));
-				genDisc->SetDppWindow(MicroSeconds(5000));
-				genDisc->SetDppThreshold(RTTPackets);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-					genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
-				}
-				break;
-			case ABM:
-				genDisc->SetBufferAlgorithm(ABM);
-				for(uint32_t n=0;n<nPrior;n++){
-					genDisc->alphas[n] = alpha_values[n];
-				}
-				break;
-			default:
-				std::cout << "Error in buffer management configuration. Exiting!";
-				return 0;
-		}
-
-		address.NewNetwork ();
-		Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
-		nsInterface.Add (interfacesBottleneck.Get (1));
+	uint32_t sink=0;
+	NetDeviceContainer devicesBottleneckLink = bottleneckLinkLongRTT.Install (nd.Get (0), sinkcontainers.Get (sink));
+	QueueDiscContainer qdiscs = tc.Install (devicesBottleneckLink.Get(0));
+	bottleneckQueueDiscs.Add(qdiscs.Get(0));
+	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
+	genDisc->SetPortId(portid++);
+	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	genDisc->setPortBw(leafSinkCapacity);
+	genDisc->SetSharedMemory(sharedMemory);
+	switch(algorithm){
+		case DT:
+			genDisc->SetBufferAlgorithm(DT);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case FAB:
+			genDisc->SetBufferAlgorithm(FAB);
+			genDisc->SetFabWindow(MicroSeconds(5000));
+			genDisc->SetFabThreshold(15*PACKET_SIZE);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case CS:
+			genDisc->SetBufferAlgorithm(CS);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		case IB:
+			genDisc->SetBufferAlgorithm(IB);
+			genDisc->SetAfdWindow(MicroSeconds(50));
+			genDisc->SetDppWindow(MicroSeconds(5000));
+			genDisc->SetDppThreshold(RTTPackets);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+				genDisc->SetQrefAfd(n,uint32_t(RTTBytes));
+			}
+			break;
+		case ABM:
+			genDisc->SetBufferAlgorithm(ABM);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDisc->alphas[n] = alpha_values[n];
+			}
+			break;
+		default:
+			std::cout << "Error in buffer management configuration. Exiting!";
+			return 0;
 	}
+
+	address.NewNetwork ();
+	Ipv4InterfaceContainer interfacesBottleneck = address.Assign (devicesBottleneckLink);
+	nsInterface.Add (interfacesBottleneck.Get (1));
+
+
+	///////////////////////////////
+	// A bottleneck link with short RTT
+	///////////////////////////////
+	PointToPointHelper bottleneckLinkShortRTT;
+	bottleneckLinkShortRTT.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
+	bottleneckLinkShortRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatency)));
+	// if (dropTail) {
+	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
+	// }
+
+	/* Leaf <--> Sink */
+	Ipv4InterfaceContainer nsInterfaceShortRTT;
+	sink=1;
+	NetDeviceContainer devicesBottleneckLinkShortRTT = bottleneckLinkShortRTT.Install (nd.Get (0), sinkcontainers.Get (sink));
+	QueueDiscContainer qdiscsShortRTT = tc.Install (devicesBottleneckLinkShortRTT.Get(0));
+	bottleneckQueueDiscs.Add(qdiscsShortRTT.Get(0));
+	Ptr<GenQueueDisc> genDiscShortRTT = DynamicCast<GenQueueDisc> (qdiscsShortRTT.Get(0));
+	genDiscShortRTT->SetPortId(portid++);
+	genDiscShortRTT->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	genDiscShortRTT->setPortBw(leafSinkCapacity);
+	genDiscShortRTT->SetSharedMemory(sharedMemory);
+	switch(algorithm){
+		case DT:
+			genDiscShortRTT->SetBufferAlgorithm(DT);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDiscShortRTT->alphas[n] = alpha_values[n];
+			}
+			break;
+		case FAB:
+			genDiscShortRTT->SetBufferAlgorithm(FAB);
+			genDiscShortRTT->SetFabWindow(MicroSeconds(5000));
+			genDiscShortRTT->SetFabThreshold(15*PACKET_SIZE);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDiscShortRTT->alphas[n] = alpha_values[n];
+			}
+			break;
+		case CS:
+			genDiscShortRTT->SetBufferAlgorithm(CS);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDiscShortRTT->alphas[n] = alpha_values[n];
+			}
+			break;
+		case IB:
+			genDiscShortRTT->SetBufferAlgorithm(IB);
+			genDiscShortRTT->SetAfdWindow(MicroSeconds(50));
+			genDiscShortRTT->SetDppWindow(MicroSeconds(5000));
+			genDiscShortRTT->SetDppThreshold(RTTPackets);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDiscShortRTT->alphas[n] = alpha_values[n];
+				genDiscShortRTT->SetQrefAfd(n,uint32_t(RTTBytes));
+			}
+			break;
+		case ABM:
+			genDiscShortRTT->SetBufferAlgorithm(ABM);
+			for(uint32_t n=0;n<nPrior;n++){
+				genDiscShortRTT->alphas[n] = alpha_values[n];
+			}
+			break;
+		default:
+			std::cout << "Error in buffer management configuration. Exiting!";
+			return 0;
+	}
+
+	address.NewNetwork ();
+	Ipv4InterfaceContainer interfacesBottleneckShortRTT = address.Assign (devicesBottleneckLinkShortRTT);
+	nsInterfaceShortRTT.Add (interfacesBottleneckShortRTT.Get (1));
 
 
 	std::cout << "start installing applications" << std::endl;
