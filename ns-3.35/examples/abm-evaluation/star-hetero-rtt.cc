@@ -568,7 +568,7 @@ main (int argc, char *argv[])
 	// }
 
 	/* Leaf <--> Sink */
-	Ipv4InterfaceContainer nsInterfaceShortRTT;
+	Ipv4InterfaceContainer nsInterface;
 	sink=1;
 	NetDeviceContainer devicesBottleneckLinkShortRTT = bottleneckLinkShortRTT.Install (nd.Get (0), sinkcontainers.Get (sink));
 	QueueDiscContainer qdiscsShortRTT = tc.Install (devicesBottleneckLinkShortRTT.Get(0));
@@ -622,7 +622,7 @@ main (int argc, char *argv[])
 
 	address.NewNetwork ();
 	Ipv4InterfaceContainer interfacesBottleneckShortRTT = address.Assign (devicesBottleneckLinkShortRTT);
-	nsInterfaceShortRTT.Add (interfacesBottleneckShortRTT.Get (1));
+	nsInterface.Add (interfacesBottleneckShortRTT.Get (1));
 
 
 	std::cout << "start installing applications" << std::endl;
