@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 dir = "/u/az6922/data/"
-file = dir + "tor-single-1-101-30.stat"
-plotname = "btfix-v30-step"
+file = dir + "tor-single-1-101-5.stat"
+plotname = "rtt-v5"
 
 #df = pd.read_csv(file, delim_whitespace=True)
 
@@ -246,9 +246,9 @@ def plot_sink_separate(numqueues, queuestart, queueend, offset, name):
 
 
 if __name__ == "__main__":
-	plot_sink_range(20,2,3,0,10000000)
-	plot_sink_separate(66,60,66,2,"sentbytes")
-	plot_sink_separate(66,60,66,3,"droppedbytes")
+	plot_sink_range(2,2,3,0,10000000)
+	plot_sink_separate(12,6,12,2,"sentbytes")
+	plot_sink_separate(12,6,12,3,"droppedbytes")
 
 	#plot_generic(4,3,"droppedbytes")
 	#plot_generic(22,2,"sentbytes")
