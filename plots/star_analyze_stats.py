@@ -47,7 +47,7 @@ def trials_all_zero_fct_slowdown(dir, starttime_list, initialwindow_list, numcon
 			for index,slowdownlist in enumerate(fctslowdown_allseedslist):
 				should_print = True
 				for sd in slowdownlist:
-					if sd != 0:
+					if sd != 1:
 						should_print = False
 						break
 				if should_print:

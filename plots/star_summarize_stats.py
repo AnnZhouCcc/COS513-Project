@@ -35,8 +35,9 @@ def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbur
 				
 				# Calculate fct slowdown
 				fctslowdown = list()
-				assert(len(cwb_fct) == numbursty)
-				assert(len(bonly_fct) == numbursty)
+				# AnnC: some flows seem to be unlogged
+				#assert(len(cwb_fct) == numbursty)
+				#assert(len(bonly_fct) == numbursty)
 				for cwb_flow_size, cwb_flow_fct in cwb_fct.items():
 					for bonly_flow_size, bonly_flow_fct in bonly_fct.items():
 						if cwb_flow_size == bonly_flow_size:
@@ -103,7 +104,7 @@ def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbur
 							count_sd += 1
 					count_num_slow += count_sd
 				f3 = open(outfile3, "a")
-				f3.write(str(count_num_slow/float(numbursty))+"\t")
+				f3.write(str(count_num_slow/float(len(slowdownlist)))+"\t")
 			f3.close()
 
 		f1 = open(outfile1, "a")
@@ -119,10 +120,10 @@ def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbur
 	return
 
 if __name__ == "__main__":
-	dir = "/u/az6922/data/burst-tolerance-aug5/"
+	dir = "/u/az6922/data/burst-tolerance-aug10/"
 	start_list = [0,4500]
-	iw_list = [5,50,100,500,1000]
+	iw_list = [5,25,50,75,100]
 	numcontinuous = 10
-	numbursty = 10
-	s3mode = "all" # "all", "positive"
+	numbursty = 100
+	s3mode = "positive" # "all", "positive"
 	summarize_flow(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)

@@ -1,9 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-dir = "/u/az6922/data/"
-file = dir + "tor-single-1-101-5.stat"
-plotname = "rtt-v5"
+dir = "/u/az6922/data/burst-tolerance-aug5/"
+file = dir + "star-burst-tolerance-buffer-50-0-1-2.data"
+plotname = "burst-sentbytes-plot1"
 
 #df = pd.read_csv(file, delim_whitespace=True)
 
@@ -219,7 +219,7 @@ def plot_separate(numqueues, offset, name):
 
 # sentbytes: plot_generic(10, 2, "sentbytes")
 # droppedbytes: plot_generic(10,3,"droppedbytes")
-def plot_sink_separate(numqueues, queuestart, queueend, offset, name):
+def plot_sink_separate(numqueues, queuestart, queueend, offset, name, plotstart, plotend):
 	qsize_list_arr = []
 	for i in range(numqueues):
 		qsize_list_arr.append(list())
@@ -236,19 +236,20 @@ def plot_sink_separate(numqueues, queuestart, queueend, offset, name):
 			for i in range(queuestart,queueend):
 				qsize_list_arr[i].append(float(array[3+5*i+offset]))
 
+	print(len(time_list))
 	plt.clf()
 	fig, axs = plt.subplots(queueend-queuestart, figsize=(15,6*(queueend-queuestart)))
 	fig.suptitle(name+" of all ports over time")
 	for i in range(queuestart,queueend):
-		axs[i-queuestart].plot(time_list,qsize_list_arr[i])
+		axs[i-queuestart].plot(time_list[plotstart:plotend],qsize_list_arr[i][plotstart:plotend])
 		plt.title("queue index "+str(i)+" "+name)
-	plt.savefig(dir+"star_"+plotname+"_plot_sink_separate_"+name+".pdf")
+	plt.savefig(dir+"star_"+plotname+"_plot_sink_separate_"+name+"_"+str(plotstart)+"_"+str(plotend)+".pdf")
 
 
 if __name__ == "__main__":
-	plot_sink_range(2,2,3,0,10000000)
-	plot_sink_separate(12,6,12,2,"sentbytes")
-	plot_sink_separate(12,6,12,3,"droppedbytes")
+	#plot_sink_range(2,2,3,0,10000000)
+	plot_sink_separate(66,60,66,2,"sentbytes",700,800)
+	#plot_sink_separate(12,6,12,3,"droppedbytes")
 
 	#plot_generic(4,3,"droppedbytes")
 	#plot_generic(22,2,"sentbytes")
