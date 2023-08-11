@@ -37,8 +37,8 @@ def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbur
 				fctslowdown = list()
 				assert(len(cwb_fct) == numbursty)
 				assert(len(bonly_fct) == numbursty)
-				for cwb_flow_size, cwb_flow_fct in cwb_fct:
-					for bonly_flow_size, bonly_flow_fct in cwb_fct:
+				for cwb_flow_size, cwb_flow_fct in cwb_fct.items():
+					for bonly_flow_size, bonly_flow_fct in bonly_fct.items():
 						if cwb_flow_size == bonly_flow_size:
 							fctslowdown.append(cwb_flow_fct/bonly_flow_fct)
 							break
