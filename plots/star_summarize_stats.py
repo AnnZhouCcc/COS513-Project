@@ -154,7 +154,7 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 						flowsize = float(phrasearray[1])
 						# print(flowsize)
 						sum_flowsize += flowsize
-				
+				# print(sum_flowsize)	
 				f1 = open(outfile1, "a")
 				f1.write(str(sum_flowsize)+"\t")
 				f1.close()
@@ -205,9 +205,9 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 			# 	f3.write(str(count_num_slow/float(len(slowdownlist)))+"\t")
 			# f3.close()
 
-		f1 = open(outfile1, "a")
-		f1.write("\n")
-		f1.close()
+			f1 = open(outfile1, "a")
+			f1.write("\n")
+			f1.close()
 		# f2 = open(outfile2, "a")
 		# f2.write("\n")
 		# f2.close()
@@ -221,8 +221,7 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 if __name__ == "__main__":
 	dir = "/u/az6922/data/burst-tolerance-aug5/"
 	start_list = [0,4500]
-	# iw_list = [5,50,100,500,1000]
-	iw_list = [5]
+	iw_list = [5,50,100,500,1000]
 	numcontinuous = 10
 	numbursty = 10
 	s3mode = "positive" # "all", "positive"
