@@ -133,37 +133,31 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 
 	for iw in initialwindow_list:
 		for start in starttime_list:
+			f1 = open(outfile1, "a")
+			f1.write(str(iw) + " (" + str(start) + "):\t")
+			f1.close()
 			for seed in range(1,11):
 				# Read from file
 				flowfile = dir+"star-burst-tolerance-flow-"+str(iw)+"-"+str(start)+"-1-"+str(seed)+".data"
 				bufferfile = dir+"star-burst-tolerance-buffer-"+str(iw)+"-"+str(start)+"-1-"+str(seed)+".data"
 				paramfile = dir+"star-burst-tolerance-parameters-"+str(iw)+"-"+str(start)+"-1-"+str(seed)+".data"
 				
+				sum_flowsize = 0
 				with open(paramfile) as paramf:
 					count = 0
 					for line in paramf:
 						count += 1
-						if count <= 1: continue
+						if count <= numcontinous+1: continue
 						array = [x for x in line.split(',')]
 						flowsizephrase = array[1]
 						phrasearray = [x for x in flowsizephrase.split('=')]
 						flowsize = float(phrasearray[1])
-						print(flowsize)
+						# print(flowsize)
+						sum_flowsize += flowsize
 				
-				
-				
-
-			# Write out tables
-			# 1. Average FCT slowdown across all flows
-			# sum_fct_all = 0
-			# count_fct_all = 0
-			# for slowdownlist in fctslowdown_allseedslist:
-			# 	avg_sd = sum(slowdownlist) / len(slowdownlist)
-			# 	sum_fct_all += avg_sd
-			# 	count_fct_all += 1
-			# f1 = open(outfile1, "a")
-			# f1.write(str(sum_fct_all/count_fct_all)+"\t")
-			# f1.close()
+				f1 = open(outfile1, "a")
+				f1.write(str(sum_flowsize)+"\t")
+				f1.close()
 
 			# # 2. Average FCT slowdown across flows that have been slowed down
 			# # sum_fct_slow = 0
@@ -214,12 +208,12 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 		f1 = open(outfile1, "a")
 		f1.write("\n")
 		f1.close()
-		f2 = open(outfile2, "a")
-		f2.write("\n")
-		f2.close()
-		f3 = open(outfile3, "a")
-		f3.write("\n")
-		f3.close()
+		# f2 = open(outfile2, "a")
+		# f2.write("\n")
+		# f2.close()
+		# f3 = open(outfile3, "a")
+		# f3.write("\n")
+		# f3.close()
 
 	return
 
