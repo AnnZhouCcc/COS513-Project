@@ -146,7 +146,7 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 						if count <= 1: continue
 						array = [x for x in line.split(',')]
 						flowsizephrase = array[1]
-						phrasearray = [x for x in flowsizephrase.split(',')]
+						phrasearray = [x for x in flowsizephrase.split('=')]
 						flowsize = float(phrasearray[1])
 						print(flowsize)
 				
