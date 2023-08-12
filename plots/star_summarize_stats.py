@@ -122,10 +122,10 @@ def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbur
 
 # will only read the bursty-only files
 def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, numbursty, s3mode="all"):
-	outfile1 = dir + "size1.txt"
-	outfile2 = dir + "size2.txt"
-	outfile3 = dir + "rate1.txt"
-	outfile4 = dir + "rate2.txt"
+	outfile1 = dir + "burst_size1.txt"
+	outfile2 = dir + "burst_size2.txt"
+	outfile3 = dir + "burst_rate1.txt"
+	outfile4 = dir + "burst_rate2.txt"
 	open(outfile1, 'w').close()
 	open(outfile2, 'w').close()
 	open(outfile3, 'w').close()
