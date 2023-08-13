@@ -364,6 +364,16 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 			f_num_diff = open(outfile_num_diff, "a")
 			f_num_diff.write(str(sum(numdrop_diff_allseedslist)/len(numdrop_diff_allseedslist))+"\t")
 			f_num_diff.close()
+
+		f_num_bonly = open(outfile_num_bonly, "a")
+		f_num_bonly.write("\n")
+		f_num_bonly.close()
+		f_num_cwb = open(outfile_num_cwb, "a")
+		f_num_cwb.write("\n")
+		f_num_cwb.close()
+		f_num_diff = open(outfile_num_diff, "a")
+		f_num_diff.write("\n")
+		f_num_diff.close()
 		
 	return
 
