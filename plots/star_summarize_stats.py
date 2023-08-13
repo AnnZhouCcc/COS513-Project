@@ -314,6 +314,13 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 	outfile_zerodrop_cwb = dir + "drop_zerodrop_cwb.txt"
 	open(outfile_zerodrop_bonly, 'w').close()
 	open(outfile_zerodrop_cwb, 'w').close()
+
+	outfile_duration_bonly = dir + "drop_duration_bonly.txt"
+	outfile_duration_cwb = dir + "drop_duration_cwb.txt"
+	outfile_duration_diff = dir + "drop_duration_diff.txt"
+	open(outfile_duration_bonly, 'w').close()
+	open(outfile_duration_cwb, 'w').close()
+	open(outfile_duration_diff, 'w').close()
 	
 	target_queue_index = numqueuesperport*(numnodes+numsinks)-1
 	for iw in initialwindow_list:
@@ -333,6 +340,9 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 			numdrop_diff_allseedslist = list()
 			num_zerodrop_cwb = 0
 			num_zerodrop_bonly = 0
+			unittime_cwb_allseedslist = list()
+			unittime_bonly_allseedslist = list()
+			unittime_diff_allseedslist = list()
 			for seed in range(1,11):
 				# Read buffer from file
 				cwbfile = dir+"star-burst-tolerance-buffer-"+str(iw)+"-"+str(start)+"-0-"+str(seed)+".data"
@@ -340,6 +350,8 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 
 				sum_numdrop_cwb = 0
 				sum_numdrop_bonly = 0
+				sum_unittime_cwb = 0
+				sum_unittime_bonly = 0
 				with open(cwbfile) as cwbf:
 					line_count = 0
 					for line in cwbf:
@@ -348,6 +360,8 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 						array = [x for x in line.split()]
 						droppedbytes = float(array[3+5*target_queue_index+3])
 						sum_numdrop_cwb += droppedbytes
+						if droppedbytes != 0:
+							sum_unittime_cwb += 1
 						
 				with open(bonlyfile) as bonlyf:
 					count = 0
@@ -357,6 +371,8 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 						array = [x for x in line.split()]
 						droppedbytes = float(array[3+5*target_queue_index+3])
 						sum_numdrop_bonly += droppedbytes
+						if droppedbytes != 0:
+							sum_unittime_bonly += 1
 				
 				sum_numdrop_diff = sum_numdrop_cwb-sum_numdrop_bonly
 				numdrop_cwb_allseedslist.append(sum_numdrop_cwb)
@@ -366,7 +382,12 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 				if sum_numdrop_cwb == 0:
 					num_zerodrop_cwb += 1	
 				if sum_numdrop_bonly == 0:
-					num_zerodrop_bonly += 1			
+					num_zerodrop_bonly += 1		
+
+				sum_unittime_diff = sum_unittime_cwb - sum_unittime_bonly
+				unittime_cwb_allseedslist.append(sum_unittime_cwb)
+				unittime_bonly_allseedslist.append(sum_unittime_bonly)
+				unittime_diff_allseedslist.append(sum_unittime_diff)	
 
 			# Write out tables
 			f_num_bonly = open(outfile_num_bonly, "a")
@@ -386,6 +407,16 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 			f_zerodrop_cwb.write(str(num_zerodrop_cwb)+"\t")
 			f_zerodrop_cwb.close()
 
+			f_duration_cwb = open(outfile_duration_cwb, "a")
+			f_duration_cwb.write(str(sum(unittime_cwb_allseedslist)/len(unittime_cwb_allseedslist)*pullingns)+"\t")
+			f_duration_cwb.close()
+			f_duration_bonly = open(outfile_duration_bonly, "a")
+			f_duration_bonly.write(str(sum(unittime_bonly_allseedslist)/len(unittime_bonly_allseedslist)*pullingns)+"\t")
+			f_duration_bonly.close()
+			f_duration_diff = open(outfile_duration_diff, "a")
+			f_duration_diff.write(str(sum(unittime_diff_allseedslist)/len(unittime_diff_allseedslist)*pullingns)+"\t")
+			f_duration_diff.close()
+
 		f_num_bonly = open(outfile_num_bonly, "a")
 		f_num_bonly.write("\n")
 		f_num_bonly.close()
@@ -402,6 +433,13 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 		f_zerodrop_cwb = open(outfile_zerodrop_cwb, "a")
 		f_zerodrop_cwb.write("\n")
 		f_zerodrop_cwb.close()
+
+		f_duration_bonly = open(outfile_duration_bonly, "a")
+		f_duration_bonly.write("\n")
+		f_duration_bonly.close()
+		f_duration_cwb = open(outfile_duration_cwb, "a")
+		f_duration_cwb.write("\n")
+		f_duration_cwb.close()
 		
 	return
 
