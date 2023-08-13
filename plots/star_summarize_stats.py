@@ -247,14 +247,70 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 	return
 
 
+def total_num_flow(dir, starttime_list, initialwindow_list, numcontinous):
+	outfile1 = dir + "total_num.txt"
+	open(outfile1, 'w').close()
+	for iw in initialwindow_list:
+		for start in starttime_list:
+			sum_num_flow = 0
+			for seed in range(1,11):
+				# Read fct from file
+				cwbfile = dir+"star-burst-tolerance-flow-"+str(iw)+"-"+str(start)+"-0-"+str(seed)+".data"
+				bonlyfile = dir+"star-burst-tolerance-flow-"+str(iw)+"-"+str(start)+"-1-"+str(seed)+".data"
+				cwb_fct = dict()
+				bonly_fct = dict()
+				with open(cwbfile) as cwbf:
+					count = 0
+					for line in cwbf:
+						count += 1
+						if count <= 1: continue
+						array = [x for x in line.split()]
+						flowsize = float(array[1])
+						fct = float(array[2])
+						cwb_fct[flowsize] = fct
+				with open(bonlyfile) as bonlyf:
+					count = 0
+					for line in bonlyf:
+						count += 1
+						if count <= numcontinous+1: continue
+						array = [x for x in line.split()]
+						flowsize = float(array[1])
+						fct = float(array[2])
+						bonly_fct[flowsize] = fct
+				
+				# Calculate fct slowdown
+				fctslowdown = list()
+				# AnnC: some flows seem to be unlogged
+				#assert(len(cwb_fct) == numbursty)
+				#assert(len(bonly_fct) == numbursty)
+				for cwb_flow_size, cwb_flow_fct in cwb_fct.items():
+					for bonly_flow_size, bonly_flow_fct in bonly_fct.items():
+						if cwb_flow_size == bonly_flow_size:
+							fctslowdown.append(cwb_flow_fct/bonly_flow_fct)
+							break
+				sum_num_flow += len(fctslowdown)
+
+			# Write out tables
+			f1 = open(outfile1, "a")
+			f1.write(str(sum_num_flow/10.0)+"\t")
+			f1.close()
+
+		f1 = open(outfile1, "a")
+		f1.write("\n")
+		f1.close()
+
+	return
+
+
 if __name__ == "__main__":
-	dir = "/u/az6922/data/burst-tolerance-aug12/"
+	dir = "/u/az6922/data/burst-tolerance-aug10/"
 	start_list = [0,4500]
-	iw_list = [10,20,30]
+	iw_list = [5,25,50,75,100]
 	numcontinuous = 10
-	numbursty = 200
+	numbursty = 100
 	s3mode = "positive" # "all", "positive"
-	summarize_flow(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
+	# summarize_flow(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
+	total_num_flow(dir, start_list, iw_list, numcontinuous)
 	numqueuesperport = 3
 	numnodes = 20
 	numsinks = 2
