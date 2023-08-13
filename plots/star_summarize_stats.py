@@ -440,6 +440,9 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 		f_duration_cwb = open(outfile_duration_cwb, "a")
 		f_duration_cwb.write("\n")
 		f_duration_cwb.close()
+		f_duration_diff = open(outfile_duration_diff, "a")
+		f_duration_diff.write("\n")
+		f_duration_diff.close()
 		
 	return
 
