@@ -313,15 +313,15 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 	target_queue_index = numqueuesperport*(numnodes+numsinks)-1
 	for iw in initialwindow_list:
 		for start in starttime_list:
-			f_num_bonly = open(outfile_num_bonly, "a")
-			f_num_bonly.write(str(iw) + "\t" + str(start) + "\t")
-			f_num_bonly.close()
-			f_num_cwb = open(outfile_num_cwb, "a")
-			f_num_cwb.write(str(iw) + "\t" + str(start) + "\t")
-			f_num_cwb.close()
-			f_num_diff = open(outfile_num_diff, "a")
-			f_num_diff.write(str(iw) + "\t" + str(start) + "\t")
-			f_num_diff.close()
+			# f_num_bonly = open(outfile_num_bonly, "a")
+			# f_num_bonly.write(str(iw) + "\t" + str(start) + "\t")
+			# f_num_bonly.close()
+			# f_num_cwb = open(outfile_num_cwb, "a")
+			# f_num_cwb.write(str(iw) + "\t" + str(start) + "\t")
+			# f_num_cwb.close()
+			# f_num_diff = open(outfile_num_diff, "a")
+			# f_num_diff.write(str(iw) + "\t" + str(start) + "\t")
+			# f_num_diff.close()
 
 			numdrop_cwb_allseedslist = list()
 			numdrop_bonly_allseedslist = list()
@@ -364,7 +364,7 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 			f_num_diff = open(outfile_num_diff, "a")
 			f_num_diff.write(str(sum(numdrop_diff_allseedslist)/len(numdrop_diff_allseedslist))+"\t")
 			f_num_diff.close()
-
+			
 		f_num_bonly = open(outfile_num_bonly, "a")
 		f_num_bonly.write("\n")
 		f_num_bonly.close()
