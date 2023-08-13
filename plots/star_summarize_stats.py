@@ -122,7 +122,7 @@ def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbur
 
 
 # will only read the bursty-only files
-def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, numbursty, numqueuesperport, numnodes, numsinks):
+def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, numbursty, numqueuesperport, numnodes, numsinks, pullingns):
 	outfile1 = dir + "burst_size1.txt"
 	outfile2 = dir + "burst_size2.txt"
 	outfile3 = dir + "burst_rate1.txt"
@@ -204,7 +204,7 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 							highest_sentbytes = sentbytes
 							endtime_rate1 = time
 				if endtime_rate1 == starttime_rate1 and starttime_rate1 > 0:
-					rate1 = highest_sentbytes
+					rate1 = highest_sentbytes/float(pullingns)
 				else:
 					rate1 = highest_sentbytes/(endtime_rate1-starttime_rate1)
 				f3 = open(outfile3, "a")
@@ -224,7 +224,7 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 						if starttime_rate1 <= time and time <= endtime_rate1:
 							sum_sentbytes_rate2 += sentbytes
 				if endtime_rate1 == starttime_rate1 and starttime_rate1 > 0:
-					rate2 = sum_sentbytes_rate2
+					rate2 = sum_sentbytes_rate2/float(pullingns)
 				else:
 					rate2 = sum_sentbytes_rate2/(endtime_rate1-starttime_rate1)
 				f4 = open(outfile4, "a")
@@ -303,15 +303,16 @@ def total_num_flow(dir, starttime_list, initialwindow_list, numcontinous):
 
 
 if __name__ == "__main__":
-	dir = "/u/az6922/data/burst-tolerance-aug10/"
+	dir = "/u/az6922/data/burst-tolerance-aug12/"
 	start_list = [0,4500]
-	iw_list = [5,25,50,75,100]
+	iw_list = [10,20,30]
 	numcontinuous = 10
-	numbursty = 100
+	numbursty = 200
 	s3mode = "positive" # "all", "positive"
 	# summarize_flow(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
-	total_num_flow(dir, start_list, iw_list, numcontinuous)
+	# total_num_flow(dir, start_list, iw_list, numcontinuous)
 	numqueuesperport = 3
-	numnodes = 20
+	numnodes = 210
 	numsinks = 2
-	# characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
+	pullingns = 1e7
+	characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks, pullingns)
