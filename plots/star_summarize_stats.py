@@ -1,7 +1,7 @@
 def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbursty, s3mode="all"):
-	outfile1 = dir + "average_all.txt"
+	outfile1 = dir + "flow_average_all.txt"
 	# outfile2 = dir + "average_slow.txt"
-	outfile3 = dir + "num_slow.txt"
+	outfile3 = dir + "flow_num_slow.txt"
 	open(outfile1, 'w').close()
 	# open(outfile2, 'w').close()
 	open(outfile3, 'w').close()
@@ -248,7 +248,7 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 
 
 def total_num_flow(dir, starttime_list, initialwindow_list, numcontinous):
-	outfile1 = dir + "total_num.txt"
+	outfile1 = dir + "flow_total_num.txt"
 	open(outfile1, 'w').close()
 	for iw in initialwindow_list:
 		for start in starttime_list:
@@ -302,6 +302,72 @@ def total_num_flow(dir, starttime_list, initialwindow_list, numcontinous):
 	return
 
 
+def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbursty, numqueuesperport, numnodes, numsinks):
+	outfile_num_bonly = dir + "drop_num_bonly.txt"
+	outfile_num_cwb = dir + "drop_num_cwb.txt"
+	outfile_num_diff = dir + "drop_num_diff.txt"
+	open(outfile_num_bonly, 'w').close()
+	open(outfile_num_cwb, 'w').close()
+	open(outfile_num_diff, 'w').close()
+	
+	target_queue_index = numqueuesperport*(numnodes+numsinks)-1
+	for iw in initialwindow_list:
+		for start in starttime_list:
+			f_num_bonly = open(outfile_num_bonly, "a")
+			f_num_bonly.write(str(iw) + "\t" + str(start) + "\t")
+			f_num_bonly.close()
+			f_num_cwb = open(outfile_num_cwb, "a")
+			f_num_cwb.write(str(iw) + "\t" + str(start) + "\t")
+			f_num_cwb.close()
+			f_num_diff = open(outfile_num_diff, "a")
+			f_num_diff.write(str(iw) + "\t" + str(start) + "\t")
+			f_num_diff.close()
+
+			numdrop_cwb_allseedslist = list()
+			numdrop_bonly_allseedslist = list()
+			numdrop_diff_allseedslist = list()
+			for seed in range(1,11):
+				# Read buffer from file
+				cwbfile = dir+"star-burst-tolerance-buffer-"+str(iw)+"-"+str(start)+"-0-"+str(seed)+".data"
+				bonlyfile = dir+"star-burst-tolerance-buffer-"+str(iw)+"-"+str(start)+"-1-"+str(seed)+".data"
+				sum_numdrop_cwb = 0
+				sum_numdrop_bonly = 0
+				with open(cwbfile) as cwbf:
+					line_count = 0
+					for line in cwbf:
+						line_count += 1
+						if line_count <= 1: continue
+						array = [x for x in line.split()]
+						droppedbytes = float(array[3+5*target_queue_index+3])
+						sum_numdrop_cwb += droppedbytes
+				with open(bonlyfile) as bonlyf:
+					count = 0
+					for line in bonlyf:
+						count += 1
+						if count <= numcontinous+1: continue
+						array = [x for x in line.split()]
+						droppedbytes = float(array[3+5*target_queue_index+3])
+						sum_numdrop_bonly += droppedbytes
+				
+				sum_numdrop_diff = sum_numdrop_cwb-sum_numdrop_bonly
+				numdrop_cwb_allseedslist.append(sum_numdrop_cwb)
+				numdrop_bonly_allseedslist.append(sum_numdrop_bonly)
+				numdrop_diff_allseedslist.append(sum_numdrop_diff)
+
+			# Write out tables
+			f_num_bonly = open(outfile_num_bonly, "a")
+			f_num_bonly.write(str(sum(numdrop_bonly_allseedslist)/len(numdrop_bonly_allseedslist))+"\t")
+			f_num_bonly.close()
+			f_num_cwb = open(outfile_num_cwb, "a")
+			f_num_cwb.write(str(sum(numdrop_cwb_allseedslist)/len(numdrop_cwb_allseedslist))+"\t")
+			f_num_cwb.close()
+			f_num_diff = open(outfile_num_diff, "a")
+			f_num_diff.write(str(sum(numdrop_diff_allseedslist)/len(numdrop_diff_allseedslist))+"\t")
+			f_num_diff.close()
+		
+	return
+
+
 if __name__ == "__main__":
 	dir = "/u/az6922/data/burst-tolerance-aug12/"
 	start_list = [0,4500]
@@ -315,4 +381,5 @@ if __name__ == "__main__":
 	numnodes = 210
 	numsinks = 2
 	pullingns = 1e7
-	characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks, pullingns)
+	# characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks, pullingns)
+	summarize_drop(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
