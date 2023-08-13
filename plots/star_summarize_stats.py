@@ -84,7 +84,7 @@ def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbur
 
 			# 3. Number of flows that have been slowed down
 			count_num_slow = 0
-			num_trial_num_slow = 0
+			num_num_slow = 0
 			if s3mode == "positive":
 				for slowdownlist in fctslowdown_allseedslist:
 					count_sd = 0
@@ -93,18 +93,19 @@ def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbur
 							count_sd += 1
 					if count_sd > 0:
 						count_num_slow += count_sd
-						num_trial_num_slow += 1
+						num_num_slow += len(slowdownlist)
 				f3 = open(outfile3, "a")
-				f3.write(str(count_num_slow/float(num_trial_num_slow))+"\t")
+				f3.write(str(count_num_slow/float(num_num_slow))+"\t")
 			elif s3mode == "all":
 				for slowdownlist in fctslowdown_allseedslist:
 					count_sd = 0
 					for sd in slowdownlist:
 						if sd > 1:
 							count_sd += 1
+						num_num_slow += 1
 					count_num_slow += count_sd
 				f3 = open(outfile3, "a")
-				f3.write(str(count_num_slow/float(len(slowdownlist)))+"\t")
+				f3.write(str(count_num_slow/float(num_num_slow))+"\t")
 			f3.close()
 
 		f1 = open(outfile1, "a")
@@ -252,9 +253,9 @@ if __name__ == "__main__":
 	iw_list = [5,50,100,500,1000]
 	numcontinuous = 10
 	numbursty = 10
-	s3mode = "positive" # "all", "positive"
-	# summarize_flow(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
+	s3mode = "all" # "all", "positive"
+	summarize_flow(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
 	numqueuesperport = 3
 	numnodes = 20
 	numsinks = 2
-	characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
+	# characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
