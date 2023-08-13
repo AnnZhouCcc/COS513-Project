@@ -142,6 +142,9 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 			f3 = open(outfile3, "a")
 			f3.write(str(iw) + " (" + str(start) + "):\t")
 			f3.close()
+			f4 = open(outfile4, "a")
+			f4.write(str(iw) + " (" + str(start) + "):\t")
+			f4.close()
 			for seed in range(1,11):
 				# Read from file
 				flowfile = dir+"star-burst-tolerance-flow-"+str(iw)+"-"+str(start)+"-1-"+str(seed)+".data"
@@ -208,8 +211,24 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 				f3.close()
 
 				# burst_rate2
-
-			
+				sum_sentbytes_rate2 = 0
+				with open(bufferfile) as bufferf:
+					line_count = 0
+					for line in bufferf:
+						line_count += 1
+						if line_count <= 1: continue
+						array = [x for x in line.split()]
+						time = int(array[0])
+						sentbytes = float(array[3+5*target_queue_index+2])
+						if starttime_rate1 <= time and time <= endtime_rate1:
+							sum_sentbytes_rate2 += sentbytes
+				if endtime_rate1 == starttime_rate1 and starttime_rate1 > 0:
+					rate2 = sum_sentbytes_rate2
+				else:
+					rate2 = sum_sentbytes_rate2/(endtime_rate1-starttime_rate1)
+				f4 = open(outfile4, "a")
+				f4.write(str(rate2)+"\t")
+				f4.close()
 
 			f1 = open(outfile1, "a")
 			f1.write("\n")
@@ -220,6 +239,9 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 			f3 = open(outfile3, "a")
 			f3.write("\n")
 			f3.close()
+			f4 = open(outfile4, "a")
+			f4.write("\n")
+			f4.close()
 
 	return
 
