@@ -204,7 +204,7 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 				else:
 					rate1 = highest_sentbytes/(endtime_rate1-starttime_rate1)
 				f3 = open(outfile3, "a")
-				f3.write(str(rate1))+"\t")
+				f3.write(str(rate1)+"\t")
 				f3.close()
 
 				# burst_rate2
