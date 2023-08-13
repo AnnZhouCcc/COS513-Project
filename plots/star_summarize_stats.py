@@ -248,12 +248,12 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 
 
 if __name__ == "__main__":
-	dir = "/u/az6922/data/burst-tolerance-aug5/"
+	dir = "/u/az6922/data/burst-tolerance-aug12/"
 	start_list = [0,4500]
-	iw_list = [5,50,100,500,1000]
+	iw_list = [10,20,30]
 	numcontinuous = 10
-	numbursty = 10
-	s3mode = "all" # "all", "positive"
+	numbursty = 200
+	s3mode = "positive" # "all", "positive"
 	summarize_flow(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
 	numqueuesperport = 3
 	numnodes = 20

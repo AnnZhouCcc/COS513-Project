@@ -30,8 +30,8 @@ def trials_all_zero_fct_slowdown(dir, starttime_list, initialwindow_list, numcon
 				
 				# Calculate fct slowdown
 				fctslowdown = list()
-				assert(len(cwb_fct) == numbursty)
-				assert(len(bonly_fct) == numbursty)
+				#assert(len(cwb_fct) == numbursty)
+				#assert(len(bonly_fct) == numbursty)
 				for cwb_flow_size, cwb_flow_fct in cwb_fct.items():
 					for bonly_flow_size, bonly_flow_fct in bonly_fct.items():
 						if cwb_flow_size == bonly_flow_size:
@@ -56,9 +56,9 @@ def trials_all_zero_fct_slowdown(dir, starttime_list, initialwindow_list, numcon
 	return
 
 if __name__ == "__main__":
-	dir = "/u/az6922/data/burst-tolerance-aug5/"
+	dir = "/u/az6922/data/burst-tolerance-aug10/"
 	start_list = [0,4500]
-	iw_list = [5,50,100,500,1000]
+	iw_list = [5,25,50,75,100]
 	numcontinuous = 10
-	numbursty = 10
+	numbursty = 100
 	trials_all_zero_fct_slowdown(dir, start_list, iw_list, numcontinuous, numbursty)
