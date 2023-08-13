@@ -121,7 +121,7 @@ def summarize_flow(dir, starttime_list, initialwindow_list, numcontinous, numbur
 
 
 # will only read the bursty-only files
-def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, numbursty, s3mode="all"):
+def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, numbursty, numqueuesperport, numnodes, numsinks):
 	outfile1 = dir + "burst_size1.txt"
 	outfile2 = dir + "burst_size2.txt"
 	outfile3 = dir + "burst_rate1.txt"
@@ -142,6 +142,7 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 				bufferfile = dir+"star-burst-tolerance-buffer-"+str(iw)+"-"+str(start)+"-1-"+str(seed)+".data"
 				paramfile = dir+"star-burst-tolerance-parameters-"+str(iw)+"-"+str(start)+"-1-"+str(seed)+".data"
 				
+				# burst_size1
 				sum_flowsize = 0
 				with open(paramfile) as paramf:
 					count = 0
@@ -159,51 +160,26 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 				f1.write(str(sum_flowsize)+"\t")
 				f1.close()
 
-			# # 2. Average FCT slowdown across flows that have been slowed down
-			# # sum_fct_slow = 0
-			# # count_fct_slow = 0
-			# # for slowdownlist in fctslowdown_allseedslist:
-			# # 	sum_sd = 0
-			# # 	count_sd = 0
-			# # 	for sd in slowdownlist:
-			# # 		if sd > 1:
-			# # 			sum_sd += sd
-			# # 			count_sd += 1
-			# # 	if count_sd > 0:
-			# # 		avg_sd = sum_sd / count_sd
-			# # 	else:
-			# # 		avg_sd = 0
-			# # 	if avg_sd > 0:
-			# # 		sum_fct_slow += avg_sd
-			# # 		count_fct_slow += 1
-			# # f2 = open(outfile2, "a")
-			# # f2.write(str(sum_fct_slow/count_fct_slow)+"\t")
-			# # f2.close()
+				# burst_size2
+				target_queue_index = numqueuesperport*(numnodes+numsinks)-1
+				sum_sentbytes = 0
+				with open(bufferfile) as bufferf:
+					line_count = 0
+					for line in bufferf:
+						line_count += 1
+						if line_count <= 1: continue
+						array = [x for x in line.split()]
+						sentbytes = int(array[3+5*target_queue_index+2])
+						sum_sentbytes += sentbytes
+				f2 = open(outfile2, "a")
+				f2.write(str(sum_sentbytes)+"\t")
+				f2.close()
 
-			# # 3. Number of flows that have been slowed down
-			# count_num_slow = 0
-			# num_trial_num_slow = 0
-			# if s3mode == "positive":
-			# 	for slowdownlist in fctslowdown_allseedslist:
-			# 		count_sd = 0
-			# 		for sd in slowdownlist:
-			# 			if sd > 1:
-			# 				count_sd += 1
-			# 		if count_sd > 0:
-			# 			count_num_slow += count_sd
-			# 			num_trial_num_slow += 1
-			# 	f3 = open(outfile3, "a")
-			# 	f3.write(str(count_num_slow/float(num_trial_num_slow))+"\t")
-			# elif s3mode == "all":
-			# 	for slowdownlist in fctslowdown_allseedslist:
-			# 		count_sd = 0
-			# 		for sd in slowdownlist:
-			# 			if sd > 1:
-			# 				count_sd += 1
-			# 		count_num_slow += count_sd
-			# 	f3 = open(outfile3, "a")
-			# 	f3.write(str(count_num_slow/float(len(slowdownlist)))+"\t")
-			# f3.close()
+				# burst_rate1
+
+				# burst_rate2
+
+			
 
 			f1 = open(outfile1, "a")
 			f1.write("\n")
@@ -226,4 +202,7 @@ if __name__ == "__main__":
 	numbursty = 10
 	s3mode = "positive" # "all", "positive"
 	# summarize_flow(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
+	numqueuesperport = 3
+	numnodes = 20
+	numsinks = 2
 	characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
