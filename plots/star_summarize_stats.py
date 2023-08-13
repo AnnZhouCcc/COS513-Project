@@ -169,7 +169,7 @@ def characterize_burst(dir, starttime_list, initialwindow_list, numcontinous, nu
 						line_count += 1
 						if line_count <= 1: continue
 						array = [x for x in line.split()]
-						sentbytes = int(array[3+5*target_queue_index+2])
+						sentbytes = float(array[3+5*target_queue_index+2])
 						sum_sentbytes += sentbytes
 				f2 = open(outfile2, "a")
 				f2.write(str(sum_sentbytes)+"\t")
@@ -205,4 +205,4 @@ if __name__ == "__main__":
 	numqueuesperport = 3
 	numnodes = 20
 	numsinks = 2
-	characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
+	characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
