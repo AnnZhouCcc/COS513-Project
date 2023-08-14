@@ -214,30 +214,30 @@ main (int argc, char *argv[])
 	uint32_t numNodes = 20;
 	cmd.AddValue ("numNodes", "number of nodes", numNodes);
 
-	double continuousAlpha = 1;
-	double burstyAlpha = 1;
-	cmd.AddValue("continuousAlpha","the alpha value for continuous flows",continuousAlpha);
-	cmd.AddValue("burstyAlpha","the alpha value for bursty flows",burstyAlpha);
+	double longRTTAlpha = 1;
+	double shortRTTAlpha = 1;
+	cmd.AddValue("longRTTAlpha","the alpha value for long-RTT flows",longRTTAlpha);
+	cmd.AddValue("shortRTTAlpha","the alpha value for short-RTT flows",shortRTTAlpha);
 
-	uint32_t numContinuousFlows = 10;
-	uint32_t numBurstyFlows = 10;
-	cmd.AddValue("numContinuousFlows","number of continuous flows",numContinuousFlows);
-	cmd.AddValue("numBurstyFlows","number of bursty flows",numBurstyFlows);
+	uint32_t numLongRTTFlows = 10;
+	uint32_t numShortRTTFlows = 10;
+	cmd.AddValue("numLongRTTFlows","number of long-RTT flows",numLongRTTFlows);
+	cmd.AddValue("numShortRTTFlows","number of short-RTT flows",numShortRTTFlows);
 
 	uint32_t fsModeLongRTT = 0;
 	uint32_t fsModeShortRTT = 0;
 	cmd.AddValue("fsModeLongRTT","0:continuous flow, 1: bursty flow, 2: no flow",fsModeLongRTT);
 	cmd.AddValue("fsModeShortRTT","0:continuous flow, 1: bursty flow, 2: no flow",fsModeShortRTT);
 
-	uint32_t burstyIW = 4;
-	uint32_t continuousIW = 4;
-	cmd.AddValue("continuousInitialWindow","initial window size for continuous flows",continuousIW);
-	cmd.AddValue("burstyInitialWindow","initial window size for bursty flows",burstyIW);
+	uint32_t longRTTIW = 4;
+	uint32_t shortRTTIW = 4;
+	cmd.AddValue("longRTTInitialWindow","initial window size for long-RTT flows",longRTTIW);
+	cmd.AddValue("shortRTTInitialWindow","initial window size for short-RTT flows",shortRTTIW);
 
-	double continuousStartTime = 0;
-	double burstyStartTime = 0;
-	cmd.AddValue("continuousStartTime","start time of bursty flows in ms; 0 for random",continuousStartTime);
-	cmd.AddValue("burstyStartTime","start time of bursty flows in ms; 0 for random",burstyStartTime);
+	double longRTTStartTime = 0;
+	double shortRTTStartTime = 0;
+	cmd.AddValue("longRTTStartTime","start time of long-RTT flows in ms; 0 for random",longRTTStartTime);
+	cmd.AddValue("shortRTTStartTime","start time of short-RTT flows in ms; 0 for random",shortRTTStartTime);
 
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
@@ -301,8 +301,8 @@ main (int argc, char *argv[])
 	}
 	// AnnC: hard-code alpha for the first queue to be 8
 	alpha_values[0] = 8; //for ACK packets
-	alpha_values[1] = continuousAlpha; //for continuous flows
-	alpha_values[2] = burstyAlpha; //for bursty flows
+	alpha_values[1] = longRTTAlpha; //for long-RTT flows
+	alpha_values[2] = shortRTTAlpha; //for short-RTT flows
 	aFile.close();
 
 	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatencyLongRTT + serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatencyShortRTT)*GIGA*1e-6)/8;
@@ -641,28 +641,28 @@ main (int argc, char *argv[])
 	std::ofstream paramfile;
   	paramfile.open (paramOutFile);
 
-	uint32_t numContinuous = numContinuousFlows;
-	uint32_t numBursty = numBurstyFlows;
-	// sink0 receives continuous flows, sink1 receives bursty flows
+	uint32_t numLongRTT = numLongRTTFlows;
+	uint32_t numShortRTT = numShortRTTFlows;
+	// sink0 receives long-RTT flows, sink1 receives short-RTT flows
 	uint32_t nodetosink[numNodes] = {0};
-	for (uint32_t i=0; i<numContinuous; i++) {
+	for (uint32_t i=0; i<numLongRTT; i++) {
 		nodetosink[i] = 0;
 	}
-	for (uint32_t i=numContinuous; i<numContinuous+numBursty; i++) {
+	for (uint32_t i=numLongRTT; i<numLongRTT+numShortRTT; i++) {
 		nodetosink[i] = 1;
 	}
 	uint32_t portnumber = 9;
 	uint32_t flowcount = 0;
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
-	// Install continuous flows
+	// Install long-RTT flows
 	double startTimeLongRTT = 0;
-	if (continuousStartTime == 0) {
+	if (longRTTStartTime == 0) {
 		startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
 	} else {
-		startTimeLongRTT = continuousStartTime/1000;
+		startTimeLongRTT = longRTTStartTime/1000;
 	}
-	for (uint32_t node=0; node<numContinuous; node++) {
+	for (uint32_t node=0; node<numLongRTT; node++) {
 		uint64_t flowSize = 0;
 		if (fsModeLongRTT == 0) {
 			flowSize = 1e9;
@@ -698,7 +698,7 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
         bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
 		bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
-		bulksend->SetAttribute("InitialCwnd", UintegerValue (continuousIW));
+		bulksend->SetAttribute("InitialCwnd", UintegerValue (longRTTIW));
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 		bulksend->SetStartTime (Seconds(startTimeLongRTT));
@@ -722,14 +722,14 @@ main (int argc, char *argv[])
 		portnumber++;
 	}
 
-	// Install bursty flows
+	// Install short-RTT flows
 	double startTime = 0;
-	if (burstyStartTime == 0) {
+	if (shortRTTStartTime == 0) {
 		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
 	} else {
-		startTime = burstyStartTime/1000;
+		startTime = shortRTTStartTime/1000;
 	}
-	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
+	for (uint32_t node=numLongRTT; node<numLongRTT+numShortRTT; node++) {
 		uint64_t flowSize = 0;
 		if (fsModeShortRTT == 0) {
 			flowSize = 1e9;
@@ -764,7 +764,7 @@ main (int argc, char *argv[])
 		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
         bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
 		bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
-		bulksend->SetAttribute("InitialCwnd", UintegerValue (burstyIW));
+		bulksend->SetAttribute("InitialCwnd", UintegerValue (shortRTTIW));
 		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
 		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
 		bulksend->SetStartTime (Seconds(startTime));
