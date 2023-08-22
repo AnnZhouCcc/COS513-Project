@@ -2,8 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 dir = "/u/az6922/data/"
-file = dir + "tor-single-1-101-5.stat"
-plotname = "rbt-rerun-v5"
+file = dir + "tor-single-1-101-7.stat"
+plotname = "bs-rbt-v7"
 
 #df = pd.read_csv(file, delim_whitespace=True)
 
