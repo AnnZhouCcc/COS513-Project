@@ -55,10 +55,50 @@ def trials_all_zero_fct_slowdown(dir, starttime_list, initialwindow_list, numcon
 
 	return
 
+
+def average_throughput(dir, buffer_list, numqueuesperport, numnodes, numsinks):
+	outfile_tp = dir + "average_throughput.txt"
+	outfile_tp2 = dir + "average_throughput_after2.txt"
+	open(outfile_tp, 'w').close()
+	open(outfile_tp2, 'w').close()
+	
+	# we look at the sink port for the continuous flows now instead of the bursty flow, thus the extra -4
+	target_queue_index = numqueuesperport*(numnodes+numsinks)-1-4
+	for buffer in buffer_list:
+		throughput_list = list()
+		# Read
+		torfile = dir+"tor-single-1-101-"+str(buffer)+".stat"
+		with open(torfile) as torf:
+			line_count = 0
+			for line in torf:
+				line_count += 1
+				if line_count <= 1: continue
+				array = [x for x in line.split()]
+				sentbytes = float(array[3+5*target_queue_index+2])
+				throughput_list.append(sentbytes)
+
+		# Write
+		print(len(throughput_list))
+		f_tp = open(outfile_tp,"a")
+		f_tp.write(str(buffer)+"\s"+str(sum(throughput_list)/len(throughput_list))+"\t")
+		f_tp.close()
+
+		f_tp2 = open(outfile_tp2,"a")
+		f_tp2.write(str(buffer)+"\s"+str(sum(throughput_list[200:])/len(throughput_list[200:]))+"\t")
+		f_tp2.close()
+	
+		return
+
+
 if __name__ == "__main__":
-	dir = "/u/az6922/data/burst-tolerance-aug10/"
+	dir = "/u/az6922/data/"
 	start_list = [0,4500]
 	iw_list = [5,25,50,75,100]
 	numcontinuous = 10
 	numbursty = 100
-	trials_all_zero_fct_slowdown(dir, start_list, iw_list, numcontinuous, numbursty)
+	# trials_all_zero_fct_slowdown(dir, start_list, iw_list, numcontinuous, numbursty)
+	buffer_list = list(range(25,126))
+	numqueuesperport = 3
+	numnodes = 11
+	numsinks = 2
+	average_throughput(dir,buffer_list,numqueuesperport,numnodes,numsinks)

@@ -1,14 +1,11 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-dir = "/u/az6922/data/"
-file = dir + "tor-single-1-101-7.stat"
-plotname = "bs-rbt-v7"
 
 #df = pd.read_csv(file, delim_whitespace=True)
 
 
-def plot_port10():
+def plot_port10(file):
 	qsize_list = list()
 	buffer_list = list()
 	time_list = list()
@@ -31,7 +28,7 @@ def plot_port10():
 	plt.savefig(dir+"star_simple_plot_port10.pdf")
 
 
-def plot_all(numqueues):
+def plot_all(file,plotname,numqueues):
 	qsize_list_arr = []
 	for i in range(numqueues):
 		qsize_list_arr.append(list())
@@ -57,7 +54,7 @@ def plot_all(numqueues):
 	plt.savefig(dir+"star_"+plotname+"_plot_all.pdf")
 
 
-def plot_all_range(numqueues,plotstart,plotend):
+def plot_all_range(file,numqueues,plotstart,plotend):
 	qsize_list_arr = []
 	for i in range(numqueues):
 		qsize_list_arr.append(list())
@@ -84,7 +81,7 @@ def plot_all_range(numqueues,plotstart,plotend):
 	plt.savefig(dir+"star_simple_plot_all_"+str(plotstart)+"_"+str(plotend)+".pdf")
 
 
-def plot_sink_range(numsenders,numsinks,numqueuespport,plotstart,plotend):
+def plot_sink_range(file,plotname,numsenders,numsinks,numqueuespport,plotstart,plotend):
 	queue_start = numsenders * numqueuespport
 	queue_end = (numsenders + numsinks) * numqueuespport
 	numqueues = (numsenders + numsinks) * numqueuespport
@@ -116,7 +113,7 @@ def plot_sink_range(numsenders,numsinks,numqueuespport,plotstart,plotend):
 	plt.savefig(dir+"star_"+plotname+"_plot_sink_"+str(plotstart)+"_"+str(plotend)+".pdf")
 
 
-def plot_selected(numservers,numsinks):
+def plot_selected(file,numservers,numsinks):
 	numqueues = numservers+numsinks
 	qsize_list_arr = []
 	for i in range(numqueues):
@@ -144,7 +141,7 @@ def plot_selected(numservers,numsinks):
 	plt.savefig(dir+"star_simple_plot_selected.pdf")
 
 
-def plot_buffer():
+def plot_buffer(file):
 	buffer_list = list()
 	time_list = list()
 	with open(file) as f:
@@ -163,7 +160,7 @@ def plot_buffer():
 
 # sentbytes: plot_generic(10, 2, "sentbytes")
 # droppedbytes: plot_generic(10,3,"droppedbytes")
-def plot_generic(numqueues, offset, name):
+def plot_generic(file,numqueues, offset, name):
 	qsize_list_arr = []
 	for i in range(numqueues):
 		qsize_list_arr.append(list())
@@ -192,7 +189,7 @@ def plot_generic(numqueues, offset, name):
 
 # sentbytes: plot_generic(10, 2, "sentbytes")
 # droppedbytes: plot_generic(10,3,"droppedbytes")
-def plot_separate(numqueues, offset, name):
+def plot_separate(file,plotname,numqueues, offset, name):
 	qsize_list_arr = []
 	for i in range(numqueues):
 		qsize_list_arr.append(list())
@@ -219,7 +216,7 @@ def plot_separate(numqueues, offset, name):
 
 # sentbytes: plot_generic(10, 2, "sentbytes")
 # droppedbytes: plot_generic(10,3,"droppedbytes")
-def plot_sink_separate(numqueues, queuestart, queueend, offset, name, plotstart, plotend):
+def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, name, plotstart, plotend):
 	qsize_list_arr = []
 	for i in range(numqueues):
 		qsize_list_arr.append(list())
@@ -247,9 +244,16 @@ def plot_sink_separate(numqueues, queuestart, queueend, offset, name, plotstart,
 
 
 if __name__ == "__main__":
-	plot_sink_range(11,2,3,0,1000)
-	plot_sink_separate(39,33,39,2,"sentbytes",0,1000)
-	plot_sink_separate(39,33,39,3,"droppedbytes",0,1000)
+	dir = "/u/az6922/data/"
+	for b in range(25,126):
+		buffer = int(b*100000)
+		file = dir + "tor-single-1-101-"+str(buffer)+".stat"
+		plotname = "bs-rbt-b"+str(buffer)
+
+		print("buffer="+str(buffer)+", reading "+file)
+		plot_sink_range(file,plotname,11,2,3,0,1000)
+		plot_sink_separate(file,plotname,39,33,39,2,"sentbytes",0,1000)
+		plot_sink_separate(file,plotname,39,33,39,3,"droppedbytes",0,1000)
 
 	#plot_generic(4,3,"droppedbytes")
 	#plot_generic(22,2,"sentbytes")
