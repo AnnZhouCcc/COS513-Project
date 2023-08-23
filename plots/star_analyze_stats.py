@@ -56,7 +56,7 @@ def trials_all_zero_fct_slowdown(dir, starttime_list, initialwindow_list, numcon
 	return
 
 
-def average_throughput(dir, b_list, numqueuesperport, numnodes, numsinks):
+def average_throughput(dir, b_list, b_factor, numqueuesperport, numnodes, numsinks):
 	outfile_tp = dir + "average_throughput.txt"
 	outfile_tp2 = dir + "average_throughput_after2.txt"
 	open(outfile_tp, 'w').close()
@@ -65,7 +65,7 @@ def average_throughput(dir, b_list, numqueuesperport, numnodes, numsinks):
 	# we look at the sink port for the continuous flows now instead of the bursty flow, thus the extra -4
 	target_queue_index = numqueuesperport*(numnodes+numsinks)-1-4
 	for b in b_list:
-		buffer = b*100000
+		buffer = b*b_factor
 		throughput_list = list()
 		# Read
 		torfile = dir+"tor-single-1-101-"+str(buffer)+".stat"
@@ -98,8 +98,9 @@ if __name__ == "__main__":
 	numcontinuous = 10
 	numbursty = 100
 	# trials_all_zero_fct_slowdown(dir, start_list, iw_list, numcontinuous, numbursty)
-	b_list = list(range(25,126))
+	b_list = list(range(5,10))
+	b_factor = 1000000
 	numqueuesperport = 3
-	numnodes = 11
+	numnodes = 20
 	numsinks = 2
-	average_throughput(dir,b_list,numqueuesperport,numnodes,numsinks)
+	average_throughput(dir,b_list,b_factor,numqueuesperport,numnodes,numsinks)
