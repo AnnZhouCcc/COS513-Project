@@ -235,6 +235,10 @@ main (int argc, char *argv[])
 	cmd.AddValue("burstyStartTime","start time of bursty flows in ms; 0 for random",burstyStartTime);
 	cmd.AddValue("continuousStartTime","start time of continuous flows in ms",continuousStartTime);
 
+	uint32_t burstSize = 1e8;
+	cmd.AddValue("burstSize","size of the burst in bytes",burstSize);	
+
+
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
@@ -653,15 +657,17 @@ main (int argc, char *argv[])
 	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
 		uint64_t flowSize = 0;
 		if (btMode == 0) {
-			flowSize = gen_random_cdf(cdfTable);
-			while (flowSize == 0) { 
-				flowSize = gen_random_cdf(cdfTable); 
-			}
+			// flowSize = gen_random_cdf(cdfTable);
+			// while (flowSize == 0) { 
+			// 	flowSize = gen_random_cdf(cdfTable); 
+			// }
+			flowSize = burstSize;
 		} else if (btMode == 1) {
-			flowSize = gen_random_cdf(cdfTable);
-			while (flowSize == 0) { 
-				flowSize = gen_random_cdf(cdfTable); 
-			}
+			// flowSize = gen_random_cdf(cdfTable);
+			// while (flowSize == 0) { 
+			// 	flowSize = gen_random_cdf(cdfTable); 
+			// }
+			flowSize = burstSize;
 		} else if (btMode == 2) {
 			flowSize = 1;
 		}

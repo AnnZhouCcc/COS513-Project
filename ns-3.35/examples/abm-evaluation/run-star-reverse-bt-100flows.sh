@@ -40,33 +40,34 @@ CDFFILE="$DIR/websearch.txt"
 CDFNAME="WS"
 
 NUMSINKS=2
-NUMNODES=200
+NUMNODES=101
 
 BUFFER=2000000
 
 START_TIME=1
-END_TIME=100
+END_TIME=16
 FLOW_END_TIME=3
 
 TCP=$CUBIC
 ALG=$DT
-version=10
+version=11
 
 CONTA=1
 BURSTA=8
 
 NUMCONTFLOWS=100
-NUMBURSTFLOWS=100
+NUMBURSTFLOWS=1
 
-BTMODE=$CONTONLY
+BTMODE=$BURSTWITHCONT
+
+CONTIW=4
+CONTSTARTMS=0
 
 BURSTIW=500
-CONTIW=4
-
 BURSTSTARTMS=6400
-CONTSTARTMS=0
+BURSTSIZEBYTE=50000000
 
 FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$version.fct"
 TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$version.stat"
 PARAMFILE="$DUMP_DIR/param-single-$TCP-$ALG-$version.txt"
-./waf --run "star-reverse-bt-100flows --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --numNodes=$NUMNODES --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatency=$LEAF_SINK_LATENCY --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE --paramOutFile=$PARAMFILE --continuousAlpha=$CONTA --burstyAlpha=$BURSTA --numContinuousFlows=$NUMCONTFLOWS --numBurstyFlows=$NUMBURSTFLOWS --btMode=$BTMODE --continuousInitialWindow=$CONTIW --burstyInitialWindow=$BURSTIW --burstyStartTime=$BURSTSTARTMS --continuousStartTime=$CONTSTARTMS"
+./waf --run "star-reverse-bt-100flows --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --numNodes=$NUMNODES --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatency=$LEAF_SINK_LATENCY --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE --paramOutFile=$PARAMFILE --continuousAlpha=$CONTA --burstyAlpha=$BURSTA --numContinuousFlows=$NUMCONTFLOWS --numBurstyFlows=$NUMBURSTFLOWS --btMode=$BTMODE --continuousInitialWindow=$CONTIW --burstyInitialWindow=$BURSTIW --burstyStartTime=$BURSTSTARTMS --continuousStartTime=$CONTSTARTMS --burstSize=$BURSTSIZEBYTE"
