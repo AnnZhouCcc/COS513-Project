@@ -81,7 +81,7 @@ def plot_all_range(file,numqueues,plotstart,plotend):
 	plt.savefig(dir+"star_simple_plot_all_"+str(plotstart)+"_"+str(plotend)+".pdf")
 
 
-def plot_sink_range(file,plotname,numsenders,numsinks,numqueuespport,plotstart,plotend):
+def plot_sink_range(file,plotname,numsenders,numsinks,numqueuespport,plotstart,plotend,timeoffsetns):
 	queue_start = numsenders * numqueuespport
 	queue_end = (numsenders + numsinks) * numqueuespport
 	numqueues = (numsenders + numsinks) * numqueuespport
@@ -97,7 +97,7 @@ def plot_sink_range(file,plotname,numsenders,numsinks,numqueuespport,plotstart,p
 			if line_count <= 0: continue
 			array = [x for x in line.split()]
 			buffer_list.append(float(array[2])*float(array[1])*10000)
-			time_list.append(int(array[0])-2000000000)
+			time_list.append(int(array[0])-timeoffsetns)
 			for i in range(queue_start,queue_end):
 				qsize_list_arr[i].append(int(array[3+5*i]))
 
@@ -216,7 +216,7 @@ def plot_separate(file,plotname,numqueues, offset, name):
 
 # sentbytes: plot_generic(10, 2, "sentbytes")
 # droppedbytes: plot_generic(10,3,"droppedbytes")
-def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, name, plotstart, plotend):
+def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, name, plotstart, plotend,timeoffsetns):
 	qsize_list_arr = []
 	for i in range(numqueues):
 		qsize_list_arr.append(list())
@@ -229,7 +229,7 @@ def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, na
 			if line_count <= 0: continue
 			array = [x for x in line.split()]
 			buffer_list.append(float(array[2])*float(array[1])*10000)
-			time_list.append(int(array[0])-2000000000)
+			time_list.append(int(array[0])-timeoffsetns)
 			for i in range(queuestart,queueend):
 				qsize_list_arr[i].append(float(array[3+5*i+offset]))
 
@@ -245,21 +245,29 @@ def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, na
 
 if __name__ == "__main__":
 	dir = "/u/az6922/data/"
-	#v = 0
-	#file = dir + "tor-single-1-101-"+str(v)+".stat"
-	#plotname = "bs-rbt-10desync-v"+str(v)
-	#plot_sink_range(file,plotname,20,2,3,0,1000)
-	#plot_sink_separate(file,plotname,66,60,66,2,"sentbytes",0,1000)
-	#plot_sink_separate(file,plotname,66,60,66,3,"droppedbytes",0,1000)
+	v = 8
+	file = dir + "tor-single-1-101-"+str(v)+".stat"
+	plotname = "reverse-bt-100flows-v"+str(v)
+	numcontinuous = 100
+	numbursty = 100
+	numnodes = numcontinuous+numbursty
+	numsinks = 2
+	numqueuesperport = 3
+	timestart = 0
+	timeend = 1500
+	timeoffsetns = 1000000000
+	plot_sink_range(file,plotname,numnodes,numsinks,numqueuesperport,timestart,timeend,timeoffsetns)
+	plot_sink_separate(file,plotname,numqueuesperport*(numnodes+numsinks),numqueuesperport*numnodes,numqueuesperport*(numnodes+numsinks),numsinks,"sentbytes",timestart,timeend,timeoffsetns)
+	plot_sink_separate(file,plotname,numqueuesperport*(numnodes+numsinks),numqueuesperport*numnodes,numqueuesperport*(numnodes+numsinks),3,"droppedbytes",timestart,timeend,timeoffsetns)
 	
-	for b in range(30,41):
-		buffer = int(b*100000)
-		file = dir + "tor-single-1-101-"+str(buffer)+".stat"
-		plotname = "bs-rbt-10desync-b"+str(buffer)
-		print("buffer="+str(buffer)+", reading "+file)
-		plot_sink_range(file,plotname,20,2,3,0,1000)
-		plot_sink_separate(file,plotname,66,60,66,2,"sentbytes",0,1000)
-		plot_sink_separate(file,plotname,66,60,66,3,"droppedbytes",0,1000)
+	#for b in range(30,41):
+	#	buffer = int(b*100000)
+	#	file = dir + "tor-single-1-101-"+str(buffer)+".stat"
+	#	plotname = "bs-rbt-10desync-b"+str(buffer)
+	#	print("buffer="+str(buffer)+", reading "+file)
+	#	plot_sink_range(file,plotname,20,2,3,0,1000)
+	#	plot_sink_separate(file,plotname,66,60,66,2,"sentbytes",0,1000)
+	#	plot_sink_separate(file,plotname,66,60,66,3,"droppedbytes",0,1000)
 
 	#plot_generic(4,3,"droppedbytes")
 	#plot_generic(22,2,"sentbytes")

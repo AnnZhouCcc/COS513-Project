@@ -203,7 +203,7 @@ main (int argc, char *argv[])
 	std::string paramOutFile="./param.txt";
 	cmd.AddValue ("paramOutFile", "File path for parameters", paramOutFile);
 
-	uint32_t rto = 10*1000; // in MicroSeconds, 5 milliseconds.
+	uint32_t rto = 1000*1000; // in MicroSeconds, 5 milliseconds.
 	cmd.AddValue ("rto", "min Retransmission timeout value in MicroSeconds", rto);
 
 	uint32_t numSinks = 1;
@@ -592,7 +592,7 @@ main (int argc, char *argv[])
 		} else if (btMode == 2) {
 			flowSize = 1e9;
 		}
-		double startTime = rand()%(int)(FLOW_LAUNCH_END_TIME-START_TIME) + START_TIME;
+		double startTime = rand_range(START_TIME,FLOW_LAUNCH_END_TIME);
 		// double startTime = START_TIME;
 		// if (continuousStartTime == 0) {
 		// 	startTime = START_TIME + node/(double)numContinuous;
@@ -643,12 +643,12 @@ main (int argc, char *argv[])
 	double startTime;
 	if (burstyStartTime == 0) {
 		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
+		// AnnC: removed this -- bursty flows start not too long after the continuous flows; hard-coded
+		while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+			startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
+		}
 	} else {
 		startTime = burstyStartTime/1000;
-	}
-	// AnnC: bursty flows start not too long after the continuous flows; hard-coded
-	while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME || startTime >= START_TIME+5) {
-		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
 	}
 	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
 		uint64_t flowSize = 0;
