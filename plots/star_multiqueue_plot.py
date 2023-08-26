@@ -245,7 +245,7 @@ def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, na
 
 if __name__ == "__main__":
 	dir = "/u/az6922/data/"
-	v = 8
+	v = 10
 	file = dir + "tor-single-1-101-"+str(v)+".stat"
 	plotname = "reverse-bt-100flows-v"+str(v)
 	numcontinuous = 100
@@ -254,20 +254,30 @@ if __name__ == "__main__":
 	numsinks = 2
 	numqueuesperport = 3
 	timestart = 0
-	timeend = 1500
+	timeend = 2000 #10000
 	timeoffsetns = 1000000000
 	plot_sink_range(file,plotname,numnodes,numsinks,numqueuesperport,timestart,timeend,timeoffsetns)
 	plot_sink_separate(file,plotname,numqueuesperport*(numnodes+numsinks),numqueuesperport*numnodes,numqueuesperport*(numnodes+numsinks),numsinks,"sentbytes",timestart,timeend,timeoffsetns)
 	plot_sink_separate(file,plotname,numqueuesperport*(numnodes+numsinks),numqueuesperport*numnodes,numqueuesperport*(numnodes+numsinks),3,"droppedbytes",timestart,timeend,timeoffsetns)
-	
-	#for b in range(30,41):
-	#	buffer = int(b*100000)
-	#	file = dir + "tor-single-1-101-"+str(buffer)+".stat"
-	#	plotname = "bs-rbt-10desync-b"+str(buffer)
-	#	print("buffer="+str(buffer)+", reading "+file)
-	#	plot_sink_range(file,plotname,20,2,3,0,1000)
-	#	plot_sink_separate(file,plotname,66,60,66,2,"sentbytes",0,1000)
-	#	plot_sink_separate(file,plotname,66,60,66,3,"droppedbytes",0,1000)
+
+	"""
+	for b in range(21,25):
+		buffer = int(b*100000)
+		file = dir + "tor-single-1-101-"+str(buffer)+".stat"
+		plotname = "reverse-bt-100flows-b"+str(buffer)
+		print("buffer="+str(buffer)+", reading "+file)
+		numcontinuous = 100
+		numbursty = 100
+		numnodes = numcontinuous+numbursty
+		numsinks = 2
+		numqueuesperport = 3
+		timestart = 0
+		timeend = 800
+		timeoffsetns = 1000000000
+		plot_sink_range(file,plotname,numnodes,numsinks,numqueuesperport,timestart,timeend,timeoffsetns)
+		plot_sink_separate(file,plotname,numqueuesperport*(numnodes+numsinks),numqueuesperport*numnodes,numqueuesperport*(numnodes+numsinks),numsinks,"sentbytes",timestart,timeend,timeoffsetns)
+		plot_sink_separate(file,plotname,numqueuesperport*(numnodes+numsinks),numqueuesperport*numnodes,numqueuesperport*(numnodes+numsinks),3,"droppedbytes",timestart,timeend,timeoffsetns)
+	"""
 
 	#plot_generic(4,3,"droppedbytes")
 	#plot_generic(22,2,"sentbytes")
