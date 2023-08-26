@@ -56,9 +56,9 @@ def trials_all_zero_fct_slowdown(dir, starttime_list, initialwindow_list, numcon
 	return
 
 
-def average_throughput(dir, b_list, b_factor, numqueuesperport, numnodes, numsinks):
+def average_throughput(dir, b_list, b_factor, numqueuesperport, numnodes, numsinks, time_after):
 	outfile_tp = dir + "average_throughput.txt"
-	outfile_tp2 = dir + "average_throughput_after2.txt"
+	outfile_tp2 = dir + "average_throughput_after"+str(time_after)+".txt"
 	open(outfile_tp, 'w').close()
 	open(outfile_tp2, 'w').close()
 	
@@ -85,7 +85,7 @@ def average_throughput(dir, b_list, b_factor, numqueuesperport, numnodes, numsin
 		f_tp.close()
 
 		f_tp2 = open(outfile_tp2,"a")
-		f_tp2.write(str(buffer)+"\t"+str(sum(throughput_list[200:])/len(throughput_list[200:]))+"\n")
+		f_tp2.write(str(buffer)+"\t"+str(sum(throughput_list[time_after:])/len(throughput_list[time_after:]))+"\n")
 		f_tp2.close()
 	
 	return
@@ -98,9 +98,10 @@ if __name__ == "__main__":
 	numcontinuous = 10
 	numbursty = 100
 	# trials_all_zero_fct_slowdown(dir, start_list, iw_list, numcontinuous, numbursty)
-	b_list = list(range(5,10))
-	b_factor = 1000000
+	b_list = list(range(30,41))
+	b_factor = 100000
 	numqueuesperport = 3
 	numnodes = 20
 	numsinks = 2
-	average_throughput(dir,b_list,b_factor,numqueuesperport,numnodes,numsinks)
+	time_after = 300
+	average_throughput(dir,b_list,b_factor,numqueuesperport,numnodes,numsinks, time_after)

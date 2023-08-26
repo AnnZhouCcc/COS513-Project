@@ -247,17 +247,15 @@ if __name__ == "__main__":
 	dir = "/u/az6922/data/"
 	#v = 0
 	#file = dir + "tor-single-1-101-"+str(v)+".stat"
-	#plotname = "bs-rbt-10sync-v"+str(v)
-	#file = dir + "tor-single-1-101-5000000.stat"
-	#plotname = "bs-rbt-10sync-small-b5000000"
+	#plotname = "bs-rbt-10desync-v"+str(v)
 	#plot_sink_range(file,plotname,20,2,3,0,1000)
 	#plot_sink_separate(file,plotname,66,60,66,2,"sentbytes",0,1000)
 	#plot_sink_separate(file,plotname,66,60,66,3,"droppedbytes",0,1000)
 	
-	for b in range(5,10):
-		buffer = int(b*1000000)
+	for b in range(30,41):
+		buffer = int(b*100000)
 		file = dir + "tor-single-1-101-"+str(buffer)+".stat"
-		plotname = "bs-rbt-10sync-small-b"+str(buffer)
+		plotname = "bs-rbt-10desync-b"+str(buffer)
 		print("buffer="+str(buffer)+", reading "+file)
 		plot_sink_range(file,plotname,20,2,3,0,1000)
 		plot_sink_separate(file,plotname,66,60,66,2,"sentbytes",0,1000)
