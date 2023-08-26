@@ -233,7 +233,7 @@ main (int argc, char *argv[])
 	double burstyStartTime = 0;
 	double continuousStartTime = 0;
 	cmd.AddValue("burstyStartTime","start time of bursty flows in ms; 0 for random",burstyStartTime);
-	cmd.AddValue("continuousStartTime","start time of continuous flows in ms; 0 for desynced",continuousStartTime);
+	cmd.AddValue("continuousStartTime","start time of continuous flows in ms",continuousStartTime);
 
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
@@ -592,10 +592,11 @@ main (int argc, char *argv[])
 		} else if (btMode == 2) {
 			flowSize = 1e9;
 		}
-		double startTime = START_TIME;
-		if (continuousStartTime == 0) {
-			startTime = START_TIME + node/(double)numContinuous;
-		}
+		double startTime = rand()%(int)(FLOW_LAUNCH_END_TIME-START_TIME) + START_TIME;
+		// double startTime = START_TIME;
+		// if (continuousStartTime == 0) {
+		// 	startTime = START_TIME + node/(double)numContinuous;
+		// }
 		//double startTime = START_TIME + node*0.1;
 		// ACK packets are prioritized
 		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
