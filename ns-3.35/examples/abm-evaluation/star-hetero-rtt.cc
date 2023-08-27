@@ -656,20 +656,27 @@ main (int argc, char *argv[])
 	srand(randomSeed);
 	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	// Install long-RTT flows
-	double startTimeLongRTT = 0;
-	if (longRTTStartTime == 0) {
-		startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
-	} else {
-		startTimeLongRTT = longRTTStartTime/1000;
-	}
+	// double startTimeLongRTT = 0;
+	// if (longRTTStartTime == 0) {
+	// 	startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
+	// } else {
+	// 	startTimeLongRTT = longRTTStartTime/1000;
+	// }
 	for (uint32_t node=0; node<numLongRTT; node++) {
 		uint64_t flowSize = 0;
+		double startTimeLongRTT = 0;
 		if (fsModeLongRTT == 0) {
 			flowSize = 1e9;
+			startTimeLongRTT = rand_range(START_TIME,FLOW_LAUNCH_END_TIME);
 		} else if (fsModeLongRTT == 1) {
 			flowSize = gen_random_cdf(cdfTable);
 			while (flowSize == 0) { 
 				flowSize = gen_random_cdf(cdfTable); 
+			}
+			if (longRTTStartTime == 0) {
+				startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
+			} else {
+				startTimeLongRTT = longRTTStartTime/1000;
 			}
 		} else if (fsModeLongRTT == 2) {
 			// AnnC: for random size alignment
@@ -678,6 +685,11 @@ main (int argc, char *argv[])
 				flowSize = gen_random_cdf(cdfTable); 
 			}
 			flowSize = 1;
+			if (longRTTStartTime == 0) {
+				startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
+			} else {
+				startTimeLongRTT = longRTTStartTime/1000;
+			}
 		}
 		// double startTime = START_TIME;
 		//double startTime = START_TIME + node*0.1;
@@ -723,23 +735,35 @@ main (int argc, char *argv[])
 	}
 
 	// Install short-RTT flows
-	double startTime = 0;
-	if (shortRTTStartTime == 0) {
-		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
-	} else {
-		startTime = shortRTTStartTime/1000;
-	}
+	// double startTime = 0;
+	// if (shortRTTStartTime == 0) {
+	// 	startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
+	// } else {
+	// 	startTime = shortRTTStartTime/1000;
+	// }
 	for (uint32_t node=numLongRTT; node<numLongRTT+numShortRTT; node++) {
 		uint64_t flowSize = 0;
+		double startTime = 0;
 		if (fsModeShortRTT == 0) {
 			flowSize = 1e9;
+			startTime = rand_range(START_TIME,FLOW_LAUNCH_END_TIME);
 		} else if (fsModeShortRTT == 1) {
 			flowSize = gen_random_cdf(cdfTable);
 			while (flowSize == 0) { 
 				flowSize = gen_random_cdf(cdfTable); 
 			}
+			if (shortRTTStartTime == 0) {
+				startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
+			} else {
+				startTime = shortRTTStartTime/1000;
+			}
 		} else if (fsModeShortRTT == 2) {
 			flowSize = 1;
+			if (shortRTTStartTime == 0) {
+				startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
+			} else {
+				startTime = shortRTTStartTime/1000;
+			}
 		}
 		// AnnC: manually increase bursty flow size
 		//if (flowSize < 1e8) flowSize=flowSize*10;
