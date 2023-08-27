@@ -644,6 +644,7 @@ main (int argc, char *argv[])
 	}
 
 	// Install bursty flows
+	/*
 	double startTime;
 	if (burstyStartTime == 0) {
 		startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
@@ -654,6 +655,7 @@ main (int argc, char *argv[])
 	} else {
 		startTime = burstyStartTime/1000;
 	}
+	*/
 	for (uint32_t node=numContinuous; node<numContinuous+numBursty; node++) {
 		uint64_t flowSize = 0;
 		if (btMode == 0) {
@@ -671,6 +673,8 @@ main (int argc, char *argv[])
 		} else if (btMode == 2) {
 			flowSize = 1;
 		}
+		// AnnC: all bursts happen within 100ms
+		double startTime = (burstyStartTime+rand_range(0,100))/1000;
 		// AnnC: manually increase bursty flow size
 		//if (flowSize < 1e8) flowSize=flowSize*10;
 		//double startTime = START_TIME + 1 + poission_gen_interval(0.2);

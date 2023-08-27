@@ -63,7 +63,7 @@ START_TIME=1
 END_TIME=9
 FLOW_END_TIME=3
 
-for B in {10..19}; do
+for B in {1..9}; do
     BUFFER=`expr $B \* 100000`
     echo $BUFFER
 

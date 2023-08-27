@@ -245,23 +245,22 @@ def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, na
 
 if __name__ == "__main__":
 	dir = "/u/az6922/data/"
-	v = 10
+	v = 21
 	file = dir + "tor-single-1-101-"+str(v)+".stat"
 	plotname = "reverse-bt-100flows-v"+str(v)
 	numcontinuous = 100
-	numbursty = 100
+	numbursty = 100 #1 #100
 	numnodes = numcontinuous+numbursty
 	numsinks = 2
 	numqueuesperport = 3
 	timestart = 0
-	timeend = 2000 #10000
+	timeend = 10000 #1600 #10000
 	timeoffsetns = 1000000000
 	plot_sink_range(file,plotname,numnodes,numsinks,numqueuesperport,timestart,timeend,timeoffsetns)
 	plot_sink_separate(file,plotname,numqueuesperport*(numnodes+numsinks),numqueuesperport*numnodes,numqueuesperport*(numnodes+numsinks),numsinks,"sentbytes",timestart,timeend,timeoffsetns)
 	plot_sink_separate(file,plotname,numqueuesperport*(numnodes+numsinks),numqueuesperport*numnodes,numqueuesperport*(numnodes+numsinks),3,"droppedbytes",timestart,timeend,timeoffsetns)
-
 	"""
-	for b in range(21,25):
+	for b in range(1,10):
 		buffer = int(b*100000)
 		file = dir + "tor-single-1-101-"+str(buffer)+".stat"
 		plotname = "reverse-bt-100flows-b"+str(buffer)
