@@ -53,22 +53,22 @@ TCP=$CUBIC
 ALG=$DT
 version=5
 
-CONTA=1
-BURSTA=1
+LONGA=1
+SHORTA=1
 
-NUMCONTFLOWS=10 #cc:1
-NUMBURSTFLOWS=10 #cc:1
+NUMLONGFLOWS=10 #cc:1
+NUMSHORTFLOWS=10 #cc:1
 
 FSMODELONGRTT=$NONE
 FSMODESHORTRTT=$BURSTY
 
-BURSTIW=500 #cc:4
-CONTIW=500 #cc:4
+SHORTIW=500 #cc:4
+LONGIW=500 #cc:4
 
-CONTSTARTMS=3000 #cc:2000
-BURSTSTARTMS=3000 #cc:2000
+LONGSTARTMS=3000 #cc:2000
+SHORTSTARTMS=3000 #cc:2000
 
 FLOWFILE="$DUMP_DIR/fcts-single-$TCP-$ALG-$version.fct"
 TORFILE="$DUMP_DIR/tor-single-$TCP-$ALG-$version.stat"
 PARAMFILE="$DUMP_DIR/param-single-$TCP-$ALG-$version.txt"
-./waf --run "star-hetero-rtt --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --numNodes=$NUMNODES --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatencyLongRTT=$LEAF_SINK_LATENCY_LONG_RTT --leafSinkLinkLatencyShortRTT=$LEAF_SINK_LATENCY_SHORT_RTT --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE --paramOutFile=$PARAMFILE --longRTTAlpha=$CONTA --shortRTTAlpha=$BURSTA --numLongRTTFlows=$NUMCONTFLOWS --numShortRTTFlows=$NUMBURSTFLOWS --fsModeLongRTT=$FSMODELONGRTT --fsModeShortRTT=$FSMODESHORTRTT --longRTTInitialWindow=$CONTIW --shortRTTInitialWindow=$BURSTIW --longRTTStartTime=$CONTSTARTMS --shortRTTStartTime=$BURSTSTARTMS"
+./waf --run "star-hetero-rtt --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --numNodes=$NUMNODES --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatencyLongRTT=$LEAF_SINK_LATENCY_LONG_RTT --leafSinkLinkLatencyShortRTT=$LEAF_SINK_LATENCY_SHORT_RTT --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE --paramOutFile=$PARAMFILE --longRTTAlpha=$LONGA --shortRTTAlpha=$SHORTA --numLongRTTFlows=$NUMLONGFLOWS --numShortRTTFlows=$NUMSHORTFLOWS --fsModeLongRTT=$FSMODELONGRTT --fsModeShortRTT=$FSMODESHORTRTT --longRTTInitialWindow=$LONGIW --shortRTTInitialWindow=$SHORTIW --longRTTStartTime=$LONGSTARTMS --shortRTTStartTime=$SHORTSTARTMS"

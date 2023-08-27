@@ -205,7 +205,7 @@ main (int argc, char *argv[])
 	std::string paramOutFile="./param.txt";
 	cmd.AddValue ("paramOutFile", "File path for parameters", paramOutFile);
 
-	uint32_t rto = 10*1000; // in MicroSeconds, 5 milliseconds.
+	uint32_t rto = 1000*1000; // in MicroSeconds, 5 milliseconds.
 	cmd.AddValue ("rto", "min Retransmission timeout value in MicroSeconds", rto);
 
 	uint32_t numSinks = 1;
