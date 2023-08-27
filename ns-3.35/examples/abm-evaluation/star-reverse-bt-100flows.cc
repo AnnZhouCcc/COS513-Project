@@ -238,6 +238,8 @@ main (int argc, char *argv[])
 	uint32_t burstSize = 1e8;
 	cmd.AddValue("burstSize","size of the burst in bytes",burstSize);	
 
+	double burstStartRange = 1000;
+	cmd.AddValue("burstStartRange","start range of bursty flows in ms",burstStartRange);
 
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
@@ -674,7 +676,7 @@ main (int argc, char *argv[])
 			flowSize = 1;
 		}
 		// AnnC: all bursts happen within 100ms
-		double startTime = (burstyStartTime+rand_range(0,100))/1000;
+		double startTime = (burstyStartTime+rand_range(0.0,burstStartRange))/1000;
 		// AnnC: manually increase bursty flow size
 		//if (flowSize < 1e8) flowSize=flowSize*10;
 		//double startTime = START_TIME + 1 + poission_gen_interval(0.2);
