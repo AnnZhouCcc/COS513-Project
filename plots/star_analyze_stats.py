@@ -91,6 +91,37 @@ def average_throughput(dir, b_list, b_factor, numqueuesperport, numnodes, numsin
 	return
 
 
+def total_drop(file, numqueuesperport, numnodes, numsinks):	
+	target_queue_index_sink0 = numqueuesperport*(numnodes+numsinks)-5
+	target_queue_index_sink1 = numqueuesperport*(numnodes+numsinks)-1
+	sum_numdrop_sink0 = 0
+	sum_numdrop_sink1 = 0
+	sum_unittime_sink0 = 0
+	sum_unittime_sink1 = 0
+
+	# Read buffer from file
+	with open(file) as f:
+		line_count = 0
+		for line in f:
+			line_count += 1
+			if line_count <= 1: continue
+			array = [x for x in line.split()]
+			drop_sink0 = float(array[3+5*target_queue_index_sink0+3])
+			drop_sink1 = float(array[3+5*target_queue_index_sink1+3])
+			sum_numdrop_sink0 += drop_sink0
+			sum_numdrop_sink1 += drop_sink1
+			if drop_sink0 != 0:
+				sum_unittime_sink0 += 1
+			if drop_sink1 != 0:
+				sum_unittime_sink1 += 1
+
+	# Write out stats
+	print(f'number of drops: sink0={sum_numdrop_sink0}, sink1={sum_numdrop_sink1}')
+	print(f'duration of drops: sink0={sum_unittime_sink0}, sink1={sum_unittime_sink1}')
+		
+	return
+
+
 if __name__ == "__main__":
 	dir = "/u/az6922/data/"
 	start_list = [0,4500]
@@ -104,4 +135,6 @@ if __name__ == "__main__":
 	numnodes = 20
 	numsinks = 2
 	time_after = 300
+	file = dir+"hetero-rtt-cc-after-aug27/tor-hetero-rtt-1-101-0.stat"
 	average_throughput(dir,b_list,b_factor,numqueuesperport,numnodes,numsinks, time_after)
+	total_drop(file, numqueuesperport, numnodes, numsinks)
