@@ -34,3 +34,6 @@ def build(bld):
     obj = bld.create_ns3_program('star-reverse-bt-100flows',
                                  ['point-to-point', 'traffic-control', 'internet', 'applications'])
     obj.source = ['star-reverse-bt-100flows.cc', 'cdf.c']
+    obj = bld.create_ns3_program('star-hetero-rtt-copy',
+                                 ['point-to-point', 'traffic-control', 'internet', 'applications'])
+    obj.source = ['star-hetero-rtt-copy.cc', 'cdf.c']
