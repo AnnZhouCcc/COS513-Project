@@ -135,6 +135,6 @@ if __name__ == "__main__":
 	numnodes = 20
 	numsinks = 2
 	time_after = 300
-	file = dir+"hetero-rtt-cc-after-aug27/tor-hetero-rtt-1-101-0.stat"
-	average_throughput(dir,b_list,b_factor,numqueuesperport,numnodes,numsinks, time_after)
+	file = dir+"hetero-rtt-cc-after-aug27/tor-hetero-rtt-1-101-3.stat"
+	#average_throughput(dir,b_list,b_factor,numqueuesperport,numnodes,numsinks, time_after)
 	total_drop(file, numqueuesperport, numnodes, numsinks)
