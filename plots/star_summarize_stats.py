@@ -447,6 +447,123 @@ def summarize_drop(dir, starttime_list, initialwindow_list, numcontinous, numbur
 	return
 
 
+def do_avg(llist):
+	return sum(llist)/len(llist)
+
+
+# calculate average total throughput & drop
+def summarize_hetero_rtt(dir, buffer_list, numqueuesperport, numnodes, numsinks):
+	outfile_throughput = dir + "throughput.txt"
+	outfile_drop = dir + "drop.txt"
+	open(outfile_throughput, 'w').close()
+	open(outfile_drop, 'w').close()
+	
+	longrtt_queue_index = numqueuesperport*(numnodes+numsinks)-5
+	shortrtt_queue_index = numqueuesperport*(numnodes+numsinks)-1
+
+	for buffer in buffer_list:
+		f_throughput = open(outfile_throughput, "a")
+		f_throughput.write(str(buffer) + "\t")
+		f_throughput.close()
+		f_drop = open(outfile_drop, "a")
+		f_drop.write(str(buffer) + "\t")
+		f_drop.close()
+
+		throughput_longrtt_both_allseedslist = list()
+		throughput_longrtt_only_allseedslist = list()
+		throughput_shortrtt_both_allseedslist = list()
+		throughput_shortrtt_only_allseedslist = list()
+		drop_longrtt_both_allseedslist = list()
+		drop_longrtt_only_allseedslist = list()
+		drop_shortrtt_both_allseedslist = list()
+		drop_shortrtt_only_allseedslist = list()
+
+		for seed in range(1,11):
+			# Read buffer from file
+			bothfile = dir+"tor-hetero-rtt-cc-after-"+str(buffer)+"-0-0-"+str(seed)+".stat"
+			longrttfile = dir+"tor-hetero-rtt-cc-after-"+str(buffer)+"-0-2-"+str(seed)+".stat"
+			shortrttfile = dir+"tor-hetero-rtt-cc-after-"+str(buffer)+"-2-0-"+str(seed)+".stat"
+
+			throughput_longrtt_both_list = list()
+			throughput_longrtt_only_list = list()
+			throughput_shortrtt_both_list = list()
+			throughput_shortrtt_only_list = list()
+			drop_longrtt_both_list = list()
+			drop_longrtt_only_list = list()
+			drop_shortrtt_both_list = list()
+			drop_shortrtt_only_list = list()
+
+			with open(bothfile) as bothf:
+				line_count = 0
+				for line in bothf:
+					line_count += 1
+					if line_count <= 1: continue
+					array = [x for x in line.split()]
+
+					longrtt_sent = float(array[3+5*longrtt_queue_index+2])
+					longrtt_drop = float(array[3+5*longrtt_queue_index+3])
+					shortrtt_sent = float(array[3+5*shortrtt_queue_index+2])
+					shortrtt_drop = float(array[3+5*shortrtt_queue_index+3])
+
+					throughput_longrtt_both_list.append(longrtt_sent)
+					drop_longrtt_both_list.append(longrtt_drop)
+					throughput_shortrtt_both_list.append(shortrtt_sent)
+					drop_shortrtt_both_list.append(shortrtt_drop)
+
+			with open(longrttfile) as longf:
+				line_count = 0
+				for line in longf:
+					line_count += 1
+					if line_count <= 1: continue
+					array = [x for x in line.split()]
+
+					longrtt_sent = float(array[3+5*longrtt_queue_index+2])
+					longrtt_drop = float(array[3+5*longrtt_queue_index+3])
+
+					throughput_longrtt_only_list.append(longrtt_sent)
+					drop_longrtt_only_list.append(longrtt_drop)
+
+			with open(shortrttfile) as shortf:
+				line_count = 0
+				for line in shortf:
+					line_count += 1
+					if line_count <= 1: continue
+					array = [x for x in line.split()]
+
+					shortrtt_sent = float(array[3+5*shortrtt_queue_index+2])
+					shortrtt_drop = float(array[3+5*shortrtt_queue_index+3])
+
+					throughput_shortrtt_only_list.append(shortrtt_sent)
+					drop_shortrtt_only_list.append(shortrtt_drop)
+
+			throughput_longrtt_both_allseedslist.append(sum(throughput_longrtt_both_list))
+			throughput_longrtt_only_allseedslist.append(sum(throughput_longrtt_only_list))
+			throughput_shortrtt_both_allseedslist.append(sum(throughput_shortrtt_both_list))
+			throughput_shortrtt_only_allseedslist.append(sum(throughput_shortrtt_only_list))
+			drop_longrtt_both_allseedslist.append(sum(drop_longrtt_both_list))
+			drop_longrtt_only_allseedslist.append(sum(drop_longrtt_only_list))
+			drop_shortrtt_both_allseedslist.append(sum(drop_shortrtt_both_list))
+			drop_shortrtt_only_allseedslist.append(sum(drop_shortrtt_only_list))
+
+		# Write out tables
+		f_throughput = open(outfile_throughput, "a")
+		f_throughput.write(str(buffer) + "\t")
+		f_throughput.write(str(do_avg(throughput_longrtt_both_allseedslist)) + "\t")
+		f_throughput.write(str(do_avg(throughput_longrtt_only_allseedslist)) + "\t")
+		f_throughput.write(str(do_avg(throughput_shortrtt_both_allseedslist)) + "\t")
+		f_throughput.write(str(do_avg(throughput_shortrtt_only_allseedslist)) + "\n")
+		f_throughput.close()
+		f_drop = open(outfile_drop, "a")
+		f_drop.write(str(buffer) + "\t")
+		f_drop.write(str(do_avg(drop_longrtt_both_allseedslist)) + "\t")
+		f_drop.write(str(do_avg(drop_longrtt_only_allseedslist)) + "\t")
+		f_drop.write(str(do_avg(drop_shortrtt_both_allseedslist)) + "\t")
+		f_drop.write(str(do_avg(drop_shortrtt_only_allseedslist)) + "\n")
+		f_drop.close()
+		
+	return
+
+
 if __name__ == "__main__":
 	dir = "/u/az6922/data/burst-tolerance-aug12/"
 	start_list = [0,4500]
@@ -461,4 +578,6 @@ if __name__ == "__main__":
 	numsinks = 2
 	pullingns = 1e7
 	# characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks, pullingns)
-	summarize_drop(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
+	#summarize_drop(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
+	buffer_list = [5,10,15,20,25,30,35,40,45,50]
+	summarize_hetero_rtt(dir, buffer_list, numqueuesperport, numnodes, numsinks)
