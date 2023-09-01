@@ -452,22 +452,21 @@ def do_avg(llist):
 
 
 # calculate average total throughput & drop
-def summarize_hetero_rtt(dir, buffer_list, numqueuesperport, numnodes, numsinks):
+def summarize_hetero_rtt(dir, buffer_list, buffer_offset, numqueuesperport, numnodes, numsinks):
 	outfile_throughput = dir + "throughput.txt"
 	outfile_drop = dir + "drop.txt"
-	open(outfile_throughput, 'w').close()
-	open(outfile_drop, 'w').close()
+	f_throughput = open(outfile_throughput, "w")
+	f_throughput.write("buffer_size\tlong_both\tlong_only\tshort_both\tshort_only\n")
+	f_throughput.close()
+	f_drop = open(outfile_drop, "w")
+	f_drop.write("buffer_size\tlong_both\tlong_only\tshort_both\tshort_only\n")
+	f_drop.close()
 	
 	longrtt_queue_index = numqueuesperport*(numnodes+numsinks)-5
 	shortrtt_queue_index = numqueuesperport*(numnodes+numsinks)-1
 
-	for buffer in buffer_list:
-		f_throughput = open(outfile_throughput, "a")
-		f_throughput.write(str(buffer) + "\t")
-		f_throughput.close()
-		f_drop = open(outfile_drop, "a")
-		f_drop.write(str(buffer) + "\t")
-		f_drop.close()
+	for b in buffer_list:
+		buffer = b*buffer_offset
 
 		throughput_longrtt_both_allseedslist = list()
 		throughput_longrtt_only_allseedslist = list()
@@ -565,19 +564,20 @@ def summarize_hetero_rtt(dir, buffer_list, numqueuesperport, numnodes, numsinks)
 
 
 if __name__ == "__main__":
-	dir = "/u/az6922/data/burst-tolerance-aug12/"
+	dir = "/u/az6922/data/hetero-rtt-cc-after-aug30/"
 	start_list = [0,4500]
 	iw_list = [10,20,30]
 	numcontinuous = 10
-	numbursty = 200
+	numbursty = 10
 	s3mode = "positive" # "all", "positive"
 	# summarize_flow(dir, start_list, iw_list, numcontinuous, numbursty, s3mode)
 	# total_num_flow(dir, start_list, iw_list, numcontinuous)
 	numqueuesperport = 3
-	numnodes = 210
+	numnodes = numcontinuous + numbursty
 	numsinks = 2
 	pullingns = 1e7
 	# characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks, pullingns)
 	#summarize_drop(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
 	buffer_list = [5,10,15,20,25,30,35,40,45,50]
-	summarize_hetero_rtt(dir, buffer_list, numqueuesperport, numnodes, numsinks)
+	buffer_offset = 100000
+	summarize_hetero_rtt(dir, buffer_list, buffer_offset, numqueuesperport, numnodes, numsinks)
