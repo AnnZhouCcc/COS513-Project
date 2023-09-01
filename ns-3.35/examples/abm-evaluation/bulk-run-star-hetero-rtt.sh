@@ -72,7 +72,7 @@ for B in 5 10 15 20 25 30 35 40 45 50; do
         time ./waf --run "star-hetero-rtt --randomSeed=$seed --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --numNodes=$NUMNODES --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatencyLongRTT=$LEAF_SINK_LATENCY_LONG_RTT --leafSinkLinkLatencyShortRTT=$LEAF_SINK_LATENCY_SHORT_RTT --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE --paramOutFile=$PARAMFILE --longRTTAlpha=$LONGA --shortRTTAlpha=$SHORTA --numLongRTTFlows=$NUMLONGFLOWS --numShortRTTFlows=$NUMSHORTFLOWS --fsModeLongRTT=$FSMODELONGRTT --fsModeShortRTT=$FSMODESHORTRTT --longRTTInitialWindow=$LONGIW --shortRTTInitialWindow=$SHORTIW --longRTTStartTime=$LONGSTARTMS --shortRTTStartTime=$SHORTSTARTMS" &
         sleep 20
     done
-    wait
+    #wait
     for seed in {1..11}; do
         FSMODELONGRTT=$CONTINUOUS
         FSMODESHORTRTT=$NONE
@@ -82,7 +82,7 @@ for B in 5 10 15 20 25 30 35 40 45 50; do
         time ./waf --run "star-hetero-rtt --randomSeed=$seed --StartTime=$START_TIME --EndTime=$END_TIME --FlowLaunchEndTime=$FLOW_END_TIME --numSinks=$NUMSINKS --numNodes=$NUMNODES --leafSinkCapacity=$LEAF_SINK_CAP --serverLeafCapacity=$SERVER_LEAF_CAP --leafSinkLinkLatencyLongRTT=$LEAF_SINK_LATENCY_LONG_RTT --leafSinkLinkLatencyShortRTT=$LEAF_SINK_LATENCY_SHORT_RTT --serverLeafLinkLatency=$SERVER_LEAF_LATENCY --TcpProt=$TCP --BufferSize=$BUFFER --algorithm=$ALG --RedMinTh=$RED_MIN --RedMaxTh=$RED_MAX --nPrior=$N_PRIO --alphasFile=$ALPHAFILE --cdfFileName=$CDFFILE --torOutFile=$TORFILE --fctOutFile=$FLOWFILE --paramOutFile=$PARAMFILE --longRTTAlpha=$LONGA --shortRTTAlpha=$SHORTA --numLongRTTFlows=$NUMLONGFLOWS --numShortRTTFlows=$NUMSHORTFLOWS --fsModeLongRTT=$FSMODELONGRTT --fsModeShortRTT=$FSMODESHORTRTT --longRTTInitialWindow=$LONGIW --shortRTTInitialWindow=$SHORTIW --longRTTStartTime=$LONGSTARTMS --shortRTTStartTime=$SHORTSTARTMS" &
         sleep 20
     done
-    wait
+    #wait
     for seed in {1..11}; do
         FSMODELONGRTT=$NONE
         FSMODESHORTRTT=$CONTINUOUS

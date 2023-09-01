@@ -245,7 +245,7 @@ def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, na
 
 if __name__ == "__main__":
 	dir = "/u/az6922/data/"
-	v = 5
+	v = 0
 	file = dir + "tor-hetero-rtt-1-101-"+str(v)+".stat"
 	plotname = "hetero-rtt-cc-v"+str(v)
 	numcontinuous = 10
