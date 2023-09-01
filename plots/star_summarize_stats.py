@@ -452,7 +452,7 @@ def do_avg(llist):
 
 
 # calculate average total throughput & drop
-def summarize_hetero_rtt(dir, buffer_list, buffer_offset, numqueuesperport, numnodes, numsinks):
+def summarize_hetero_rtt(dir, buffer_list, buffer_offset, tmode, numqueuesperport, numnodes, numsinks):
 	outfile_throughput = dir + "throughput.txt"
 	outfile_drop = dir + "drop.txt"
 	f_throughput = open(outfile_throughput, "w")
@@ -547,17 +547,39 @@ def summarize_hetero_rtt(dir, buffer_list, buffer_offset, numqueuesperport, numn
 		# Write out tables
 		f_throughput = open(outfile_throughput, "a")
 		f_throughput.write(str(buffer) + "\t")
-		f_throughput.write(str(do_avg(throughput_longrtt_both_allseedslist)) + "\t")
-		f_throughput.write(str(do_avg(throughput_longrtt_only_allseedslist)) + "\t")
-		f_throughput.write(str(do_avg(throughput_shortrtt_both_allseedslist)) + "\t")
-		f_throughput.write(str(do_avg(throughput_shortrtt_only_allseedslist)) + "\n")
+		if tmode == "all":
+			f_throughput.write(str(do_avg(throughput_longrtt_both_allseedslist)) + "\t")
+			f_throughput.write(str(do_avg(throughput_longrtt_only_allseedslist)) + "\t")
+			f_throughput.write(str(do_avg(throughput_shortrtt_both_allseedslist)) + "\t")
+			f_throughput.write(str(do_avg(throughput_shortrtt_only_allseedslist)) + "\n")
+		elif tmode == "aimd":
+			f_throughput.write(str(do_avg(throughput_longrtt_both_allseedslist[400:])) + "\t")
+			f_throughput.write(str(do_avg(throughput_longrtt_only_allseedslist[400:])) + "\t")
+			f_throughput.write(str(do_avg(throughput_shortrtt_both_allseedslist[400:])) + "\t")
+			f_throughput.write(str(do_avg(throughput_shortrtt_only_allseedslist[400:])) + "\n")
+		elif tmode == "slowstart":
+			f_throughput.write(str(do_avg(throughput_longrtt_both_allseedslist[0:400])) + "\t")
+			f_throughput.write(str(do_avg(throughput_longrtt_only_allseedslist[0:400])) + "\t")
+			f_throughput.write(str(do_avg(throughput_shortrtt_both_allseedslist[0:400])) + "\t")
+			f_throughput.write(str(do_avg(throughput_shortrtt_only_allseedslist[0:400])) + "\n")
 		f_throughput.close()
 		f_drop = open(outfile_drop, "a")
 		f_drop.write(str(buffer) + "\t")
-		f_drop.write(str(do_avg(drop_longrtt_both_allseedslist)) + "\t")
-		f_drop.write(str(do_avg(drop_longrtt_only_allseedslist)) + "\t")
-		f_drop.write(str(do_avg(drop_shortrtt_both_allseedslist)) + "\t")
-		f_drop.write(str(do_avg(drop_shortrtt_only_allseedslist)) + "\n")
+		if tmode == "all":
+			f_drop.write(str(do_avg(drop_longrtt_both_allseedslist)) + "\t")
+			f_drop.write(str(do_avg(drop_longrtt_only_allseedslist)) + "\t")
+			f_drop.write(str(do_avg(drop_shortrtt_both_allseedslist)) + "\t")
+			f_drop.write(str(do_avg(drop_shortrtt_only_allseedslist)) + "\n")
+		elif tmode == "aimd":
+			f_drop.write(str(do_avg(drop_longrtt_both_allseedslist[400:])) + "\t")
+			f_drop.write(str(do_avg(drop_longrtt_only_allseedslist[400:])) + "\t")
+			f_drop.write(str(do_avg(drop_shortrtt_both_allseedslist[400:])) + "\t")
+			f_drop.write(str(do_avg(drop_shortrtt_only_allseedslist[400:])) + "\n")
+		elif tmode == "slowstart":
+			f_drop.write(str(do_avg(drop_longrtt_both_allseedslist[0:400])) + "\t")
+			f_drop.write(str(do_avg(drop_longrtt_only_allseedslist[0:400])) + "\t")
+			f_drop.write(str(do_avg(drop_shortrtt_both_allseedslist[0:400])) + "\t")
+			f_drop.write(str(do_avg(drop_shortrtt_only_allseedslist[0:400])) + "\n")
 		f_drop.close()
 		
 	return
@@ -580,4 +602,5 @@ if __name__ == "__main__":
 	#summarize_drop(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
 	buffer_list = [5,10,15,20,25,30,35,40,45,50]
 	buffer_offset = 100000
-	summarize_hetero_rtt(dir, buffer_list, buffer_offset, numqueuesperport, numnodes, numsinks)
+	tmode = "aimd" # "slowstart", "aimd", "all"
+	summarize_hetero_rtt(dir, buffer_list, buffer_offset, tmode, numqueuesperport, numnodes, numsinks)
