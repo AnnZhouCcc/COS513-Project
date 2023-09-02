@@ -242,7 +242,9 @@ main (int argc, char *argv[])
 	cmd.AddValue("shortRTTStartTime","start time of short-RTT flows in ms; 0 for random",shortRTTStartTime);
 
 	uint64_t minBurstSize = 100000000;
+	double burstStartRange = 1000000;
 	cmd.AddValue("minBurstSize","the approximate burst size in bytes",minBurstSize);
+	cmd.AddValue("burstStartRange","the burst start range in ns",burstStartRange);
 	
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
@@ -359,6 +361,16 @@ main (int argc, char *argv[])
 	uint32_t numBursts = bursts_list.size();
 	numLongRTTFlows = numBursts;
 	numShortRTTFlows = numBursts;
+
+	std::vector<double> add_burst_times;
+	double addStartTimeS = 0;
+	for (uint32_t i=0; i<numBursts; i++) {
+		addStartTimeS = rand_range(0.0,burstStartRange)/1000000000;
+		while (addStartTimeS == 0) { 
+			addStartTimeS = rand_range(0.0,burstStartRange)/1000000000;
+		}
+		add_burst_times.push_back(addStartTimeS);
+	}
 
 	// NodeContainer nodecontainers;
 	// nodecontainers.Create(numNodes);
@@ -734,11 +746,12 @@ main (int argc, char *argv[])
 			// 	flowSize = gen_random_cdf(cdfTable); 
 			// }
 			flowSize = bursts_list.at(node);
-			if (longRTTStartTime == 0) {
-				startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
-			} else {
-				startTimeLongRTT = longRTTStartTime/1000;
-			}
+			// if (longRTTStartTime == 0) {
+			// 	startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
+			// } else {
+			// 	startTimeLongRTT = longRTTStartTime/1000;
+			// }
+			startTimeLongRTT = longRTTStartTime/1000 + add_burst_times.at(node);
 		} else if (fsModeLongRTT == 2) {
 			// AnnC: for random size alignment
 			// flowSize = gen_random_cdf(cdfTable);
@@ -816,11 +829,12 @@ main (int argc, char *argv[])
 			// 	flowSize = gen_random_cdf(cdfTable); 
 			// }
 			flowSize = bursts_list.at(node);
-			if (shortRTTStartTime == 0) {
-				startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
-			} else {
-				startTime = shortRTTStartTime/1000;
-			}
+			// if (shortRTTStartTime == 0) {
+			// 	startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
+			// } else {
+			// 	startTime = shortRTTStartTime/1000;
+			// }
+			startTime = shortRTTStartTime/1000 + add_burst_times.at(node);
 		} else if (fsModeShortRTT == 2) {
 			flowSize = 1;
 			if (shortRTTStartTime == 0) {
