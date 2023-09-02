@@ -245,16 +245,16 @@ def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, na
 
 if __name__ == "__main__":
 	dir = "/u/az6922/data/"
-	v = 0
+	v = 8
 	file = dir + "tor-hetero-rtt-1-101-"+str(v)+".stat"
-	plotname = "hetero-rtt-cc-v"+str(v)
-	numcontinuous = 10
-	numbursty = 10
+	plotname = "hetero-rtt-bb-v"+str(v)
+	numcontinuous = 189
+	numbursty = 189
 	numnodes = numcontinuous+numbursty
 	numsinks = 2
 	numqueuesperport = 3
 	timestart = 0
-	timeend = 2400 #1600 #10000
+	timeend = 1500 #1600 #10000
 	timeoffsetns = 1000000000
 	plot_sink_range(file,plotname,numnodes,numsinks,numqueuesperport,timestart,timeend,timeoffsetns)
 	plot_sink_separate(file,plotname,numqueuesperport*(numnodes+numsinks),numqueuesperport*numnodes,numqueuesperport*(numnodes+numsinks),numsinks,"sentbytes",timestart,timeend,timeoffsetns)

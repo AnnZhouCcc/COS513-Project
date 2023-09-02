@@ -123,10 +123,10 @@ def total_drop(file, numqueuesperport, numnodes, numsinks):
 
 
 def write_fct_comparison_hetero_rtt_bb():
-	bothfile = dir+"fcts-hetero-rtt-1-101-0.fct"
-	longfile = dir+"fcts-hetero-rtt-1-101-1.fct"
-	shortfile = dir+"fcts-hetero-rtt-1-101-2.fct"
-	writefile = dir+"fcts.txt"
+	bothfile = dir+"fcts-hetero-rtt-1-101-3.fct"
+	longfile = dir+"fcts-hetero-rtt-1-101-7.fct"
+	shortfile = dir+"fcts-hetero-rtt-1-101-8.fct"
+	writefile = dir+"fcts_378.txt"
 
 	mapsizefcts = dict()
 	with open(bothfile) as bothf:
@@ -187,7 +187,7 @@ def write_fct_comparison_hetero_rtt_bb():
 				print(f"Error! short_only already exists, shortfile, flowsize={flowsize}, fct={fct}, priority={priority}")
 			mapsizefcts[flowsize][label] = fct
 
-	with open(writefile) as f:
+	with open(writefile, "w") as f:
 		f.write(f"flowsize\tlong_both\tlong_only\tlong_ratio\tshort_both\tshort_only\tshort_ratio\n")
 		for flowsize,fcts in mapsizefcts.items():
 			long_both_fct = fcts["long_both"]
@@ -200,7 +200,7 @@ def write_fct_comparison_hetero_rtt_bb():
 
 
 if __name__ == "__main__":
-	dir = "/u/az6922/data/hetero-rtt-bb-before-investigation-sep2/"
+	dir = "/u/az6922/data/"
 	start_list = [0,4500]
 	iw_list = [5,25,50,75,100]
 	numcontinuous = 10

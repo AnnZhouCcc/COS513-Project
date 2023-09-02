@@ -342,6 +342,9 @@ main (int argc, char *argv[])
 	/* Reference: https://github.com/netsyn-princeton/cc-aqm-bm-ns3 */
 	/****************************************************************/
 
+	srand(randomSeed);
+	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
+
 	NS_LOG_INFO ("Initialize CDF table");
 	struct cdf_table* cdfTable = new cdf_table ();
 	init_cdf (cdfTable);
@@ -723,8 +726,6 @@ main (int argc, char *argv[])
 	// }
 	uint32_t portnumber = 9;
 	uint32_t flowcount = 0;
-	srand(randomSeed);
-	NS_LOG_INFO ("Initialize random seed: " << randomSeed);
 	// Install long-RTT flows
 	// double startTimeLongRTT = 0;
 	// if (longRTTStartTime == 0) {
