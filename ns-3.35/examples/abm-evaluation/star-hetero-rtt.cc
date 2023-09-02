@@ -151,12 +151,14 @@ main (int argc, char *argv[])
 
 	uint64_t serverLeafCapacity = 1;
 	uint64_t leafSinkCapacity = 1;
-	double serverLeafLinkLatency = 10;
+	double serverLeafLinkLatencyLongRTT = 10;
+	double serverLeafLinkLatencyShortRTT = 10;
 	double leafSinkLinkLatencyLongRTT = 10;
 	double leafSinkLinkLatencyShortRTT = 1;
 	cmd.AddValue("serverLeafCapacity", "Server <-> Leaf capacity in Gbps", serverLeafCapacity);
 	cmd.AddValue("leafSinkCapacity", "Leaf <-> Sink capacity in Gbps", leafSinkCapacity);
-	cmd.AddValue("serverLeafLinkLatency", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatency);
+	cmd.AddValue("serverLeafLinkLatencyLongRTT", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatencyLongRTT);
+	cmd.AddValue("serverLeafLinkLatencyShortRTT", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatencyShortRTT);
 	cmd.AddValue("leafSinkLinkLatencyLongRTT", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatencyLongRTT);
 	cmd.AddValue("leafSinkLinkLatencyShortRTT", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatencyShortRTT);
 
@@ -305,9 +307,9 @@ main (int argc, char *argv[])
 	alpha_values[2] = shortRTTAlpha; //for short-RTT flows
 	aFile.close();
 
-	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatencyLongRTT + serverLeafCapacity*serverLeafLinkLatency+leafSinkCapacity*leafSinkLinkLatencyShortRTT)*GIGA*1e-6)/8;
+	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatencyLongRTT+leafSinkCapacity*leafSinkLinkLatencyLongRTT + serverLeafCapacity*serverLeafLinkLatencyShortRTT+leafSinkCapacity*leafSinkLinkLatencyShortRTT)*GIGA*1e-6)/8;
 	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
-	baseRTTNano = (serverLeafLinkLatency*2+leafSinkLinkLatencyLongRTT+leafSinkLinkLatencyShortRTT)*1e3;
+	baseRTTNano = (serverLeafLinkLatencyLongRTT+serverLeafLinkLatencyShortRTT+leafSinkLinkLatencyLongRTT+leafSinkLinkLatencyShortRTT)*1e3;
 	// nicBw = serverLeafCapacity+leafSinkCapacity;
 
     // Config::SetDefault("ns3::GenQueueDisc::updateInterval", UintegerValue(alphaUpdateInterval*linkLatency*8*1000));
@@ -335,8 +337,12 @@ main (int argc, char *argv[])
 	/* Reference: https://github.com/netsyn-princeton/cc-aqm-bm-ns3 */
 	/****************************************************************/
 
-	NodeContainer nodecontainers;
-	nodecontainers.Create(numNodes);
+	// NodeContainer nodecontainers;
+	// nodecontainers.Create(numNodes);
+	NodeContainer longRTTnodecontainers;
+	longRTTnodecontainers.Create(numLongRTTFlows);
+	NodeContainer shortRTTnodecontainers;
+	shortRTTnodecontainers.Create(numShortRTTFlows);
 	NodeContainer nd;
 	nd.Create (1);
 	NodeContainer sinkcontainers; 
@@ -465,17 +471,50 @@ main (int argc, char *argv[])
 
 	std::cout << "serverLeafCapacity=" << serverLeafCapacity << ", leafSinkCapacity=" << leafSinkCapacity << std::endl;
 
-	PointToPointHelper accessLink;
-	accessLink.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
-	accessLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(serverLeafLinkLatency)));
+	//////////////////////////////////
+	// An access link with long RTT //
+	//////////////////////////////////
+	PointToPointHelper accessLinkLongRTT;
+	accessLinkLongRTT.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
+	accessLinkLongRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(serverLeafLinkLatencyLongRTT)));
 	// if (dropTail) {
 	// 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
 	// }
 
 	/* Server <--> Leaf */
 	// std::cout << "nodecontainers.GetN()=" << nodecontainers.GetN() << std::endl;
-	for (uint32_t server=0; server<nodecontainers.GetN(); server++) {
-		NetDeviceContainer netDeviceContainer = accessLink.Install(nodecontainers.Get(server), nd.Get(0));
+	for (uint32_t server=0; server<longRTTnodecontainers.GetN(); server++) {
+		NetDeviceContainer netDeviceContainer = accessLinkLongRTT.Install(longRTTnodecontainers.Get(server), nd.Get(0));
+		QueueDiscContainer queuedisc = tc.Install(netDeviceContainer.Get(1));
+		bottleneckQueueDiscs.Add(queuedisc.Get(0));
+		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
+		genDisc->SetPortId(portid++);
+		// AnnC: [artemis-star-topology] Assume to be DT.
+		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+		genDisc->setPortBw(serverLeafCapacity);
+		genDisc->SetSharedMemory(sharedMemory);
+		genDisc->SetBufferAlgorithm(DT);
+		for(uint32_t n=0;n<nPrior;n++){
+			genDisc->alphas[n] = alpha_values[n];
+		}
+		address.NewNetwork ();
+		address.Assign (netDeviceContainer);
+	}
+
+	///////////////////////////////////
+	// An access link with short RTT //
+	///////////////////////////////////
+	PointToPointHelper accessLink;
+	accessLink.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
+	accessLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(serverLeafLinkLatencyShortRTT)));
+	// if (dropTail) {
+	// 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
+	// }
+
+	/* Server <--> Leaf */
+	// std::cout << "nodecontainers.GetN()=" << nodecontainers.GetN() << std::endl;
+	for (uint32_t server=0; server<shortRTTnodecontainers.GetN(); server++) {
+		NetDeviceContainer netDeviceContainer = accessLink.Install(shortRTTnodecontainers.Get(server), nd.Get(0));
 		QueueDiscContainer queuedisc = tc.Install(netDeviceContainer.Get(1));
 		bottleneckQueueDiscs.Add(queuedisc.Get(0));
 		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
@@ -644,13 +683,13 @@ main (int argc, char *argv[])
 	uint32_t numLongRTT = numLongRTTFlows;
 	uint32_t numShortRTT = numShortRTTFlows;
 	// sink0 receives long-RTT flows, sink1 receives short-RTT flows
-	uint32_t nodetosink[numNodes] = {0};
-	for (uint32_t i=0; i<numLongRTT; i++) {
-		nodetosink[i] = 0;
-	}
-	for (uint32_t i=numLongRTT; i<numLongRTT+numShortRTT; i++) {
-		nodetosink[i] = 1;
-	}
+	// uint32_t nodetosink[numNodes] = {0};
+	// for (uint32_t i=0; i<numLongRTT; i++) {
+	// 	nodetosink[i] = 0;
+	// }
+	// for (uint32_t i=numLongRTT; i<numLongRTT+numShortRTT; i++) {
+	// 	nodetosink[i] = 1;
+	// }
 	uint32_t portnumber = 9;
 	uint32_t flowcount = 0;
 	srand(randomSeed);
@@ -697,7 +736,8 @@ main (int argc, char *argv[])
 		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
 		uint64_t flowPriority = 1;
 		
-		uint32_t sink = nodetosink[node];
+		// uint32_t sink = nodetosink[node];
+		uint32_t sink = 0;
 		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
 		Address sinkAddress(ad);
 
@@ -716,7 +756,7 @@ main (int argc, char *argv[])
 		bulksend->SetStartTime (Seconds(startTimeLongRTT));
 		// std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
         bulksend->SetStopTime (Seconds (END_TIME));
-		nodecontainers.Get(node)->AddApplication(bulksend);
+		longRTTnodecontainers.Get(node)->AddApplication(bulksend);
 
 		PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
 		ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
@@ -741,7 +781,7 @@ main (int argc, char *argv[])
 	// } else {
 	// 	startTime = shortRTTStartTime/1000;
 	// }
-	for (uint32_t node=numLongRTT; node<numLongRTT+numShortRTT; node++) {
+	for (uint32_t node=0; node<numShortRTT; node++) {
 		uint64_t flowSize = 0;
 		double startTime = 0;
 		if (fsModeShortRTT == 0) {
@@ -775,7 +815,8 @@ main (int argc, char *argv[])
 		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
 		uint64_t flowPriority = 2;
 
-		uint32_t sink = nodetosink[node];
+		// uint32_t sink = nodetosink[numLongRTT+node];
+		uint32_t sink = 1;
 		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
 		Address sinkAddress(ad);
 
@@ -794,7 +835,7 @@ main (int argc, char *argv[])
 		bulksend->SetStartTime (Seconds(startTime));
 		// std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
         bulksend->SetStopTime (Seconds (END_TIME));
-		nodecontainers.Get(node)->AddApplication(bulksend);
+		shortRTTnodecontainers.Get(node)->AddApplication(bulksend);
 
 		PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
 		ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
