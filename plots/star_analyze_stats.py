@@ -122,8 +122,85 @@ def total_drop(file, numqueuesperport, numnodes, numsinks):
 	return
 
 
+def write_fct_comparison_hetero_rtt_bb():
+	bothfile = dir+"fcts-hetero-rtt-1-101-0.fct"
+	longfile = dir+"fcts-hetero-rtt-1-101-1.fct"
+	shortfile = dir+"fcts-hetero-rtt-1-101-2.fct"
+	writefile = dir+"fcts.txt"
+
+	mapsizefcts = dict()
+	with open(bothfile) as bothf:
+		count = 0
+		for line in bothf:
+			count += 1
+			if count <= 1: continue
+			array = [x for x in line.split()]
+			flowsize = float(array[1])
+			fct = float(array[2])
+			priority = int(array[5])
+			if flowsize not in mapsizefcts:
+				mapsizefcts[flowsize] = dict()
+			if priority == 1:
+				label = "long_both"
+				if label in mapsizefcts[flowsize]:
+					print(f"Error! long_both already exists, bothfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+				mapsizefcts[flowsize][label] = fct
+			elif priority == 2:
+				label = "short_both"
+				if label in mapsizefcts[flowsize]:
+					print(f"Error! short_both already exists, bothfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+				mapsizefcts[flowsize][label] = fct
+
+	with open(longfile) as longf:
+		count = 0
+		for line in longf:
+			count += 1
+			if count <= 1: continue
+			array = [x for x in line.split()]
+			flowsize = float(array[1])
+			fct = float(array[2])
+			priority = int(array[5])
+			if priority == 2:
+				continue
+			if flowsize not in mapsizefcts:
+				print(f"Error! entry not already exist, longfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+			label = "long_only"
+			if label in mapsizefcts[flowsize]:
+				print(f"Error! long_only already exists, longfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+			mapsizefcts[flowsize][label] = fct
+
+	with open(shortfile) as shortf:
+		count = 0
+		for line in shortf:
+			count += 1
+			if count <= 1: continue
+			array = [x for x in line.split()]
+			flowsize = float(array[1])
+			fct = float(array[2])
+			priority = int(array[5])
+			if priority == 1:
+				continue
+			if flowsize not in mapsizefcts:
+				print(f"Error! entry not already exist, shortfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+			label = "short_only"
+			if label in mapsizefcts[flowsize]:
+				print(f"Error! short_only already exists, shortfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+			mapsizefcts[flowsize][label] = fct
+
+	with open(writefile) as f:
+		f.write(f"flowsize\tlong_both\tlong_only\tlong_ratio\tshort_both\tshort_only\tshort_ratio\n")
+		for flowsize,fcts in mapsizefcts.items():
+			long_both_fct = fcts["long_both"]
+			short_both_fct = fcts["short_both"]
+			long_only_fct = fcts["long_only"]
+			short_only_fct = fcts["short_only"]
+			f.write(f"{flowsize}\t{long_both_fct}\t{long_only_fct}\t{long_both_fct/long_only_fct}\t{short_both_fct}\t{short_only_fct}\t{short_both_fct/short_only_fct}\n")
+
+	return
+
+
 if __name__ == "__main__":
-	dir = "/u/az6922/data/"
+	dir = "/u/az6922/data/hetero-rtt-bb-before-investigation-sep2/"
 	start_list = [0,4500]
 	iw_list = [5,25,50,75,100]
 	numcontinuous = 10
@@ -137,4 +214,5 @@ if __name__ == "__main__":
 	time_after = 300
 	file = dir+"hetero-rtt-cc-after-aug27/tor-hetero-rtt-1-101-3.stat"
 	#average_throughput(dir,b_list,b_factor,numqueuesperport,numnodes,numsinks, time_after)
-	total_drop(file, numqueuesperport, numnodes, numsinks)
+	#total_drop(file, numqueuesperport, numnodes, numsinks)
+	write_fct_comparison_hetero_rtt_bb()
