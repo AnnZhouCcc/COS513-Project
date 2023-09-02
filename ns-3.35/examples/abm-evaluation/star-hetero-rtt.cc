@@ -241,6 +241,9 @@ main (int argc, char *argv[])
 	cmd.AddValue("longRTTStartTime","start time of long-RTT flows in ms; 0 for random",longRTTStartTime);
 	cmd.AddValue("shortRTTStartTime","start time of short-RTT flows in ms; 0 for random",shortRTTStartTime);
 
+	uint64_t minBurstSize = 100000000;
+	cmd.AddValue("minBurstSize","the approximate burst size in bytes",minBurstSize);
+	
 	/*Parse CMD*/
 	cmd.Parse (argc,argv);
 
@@ -336,6 +339,26 @@ main (int argc, char *argv[])
 	/* Swap to a star topology                                      */
 	/* Reference: https://github.com/netsyn-princeton/cc-aqm-bm-ns3 */
 	/****************************************************************/
+
+	NS_LOG_INFO ("Initialize CDF table");
+	struct cdf_table* cdfTable = new cdf_table ();
+	init_cdf (cdfTable);
+	load_cdf (cdfTable, cdfFileName.c_str ());
+
+	std::vector<uint64_t> bursts_list;
+	uint64_t currBurstSize = 0;
+	uint64_t flowSize = 0;
+	while (currBurstSize < minBurstSize) {
+		flowSize = gen_random_cdf(cdfTable);
+		while (flowSize == 0) { 
+			flowSize = gen_random_cdf(cdfTable); 
+		}
+		bursts_list.push_back(flowSize);
+		currBurstSize += flowSize;
+	}
+	uint32_t numBursts = bursts_list.size();
+	numLongRTTFlows = numBursts;
+	numShortRTTFlows = numBursts;
 
 	// NodeContainer nodecontainers;
 	// nodecontainers.Create(numNodes);
@@ -672,11 +695,7 @@ main (int argc, char *argv[])
 	std::cout << "start installing applications" << std::endl;
 
 	// Install applications
-	NS_LOG_INFO ("Initialize CDF table");
-	struct cdf_table* cdfTable = new cdf_table ();
-	init_cdf (cdfTable);
-	load_cdf (cdfTable, cdfFileName.c_str ());
-
+	NS_LOG_INFO("Install applications");
 	std::ofstream paramfile;
   	paramfile.open (paramOutFile);
 
@@ -701,6 +720,8 @@ main (int argc, char *argv[])
 	// } else {
 	// 	startTimeLongRTT = longRTTStartTime/1000;
 	// }
+	paramfile << "burst size = " << currBurstSize << "\n";
+	paramfile << "number of long-RTT flows = " << numLongRTT << "\n";
 	for (uint32_t node=0; node<numLongRTT; node++) {
 		uint64_t flowSize = 0;
 		double startTimeLongRTT = 0;
@@ -708,10 +729,11 @@ main (int argc, char *argv[])
 			flowSize = 1e9;
 			startTimeLongRTT = rand_range(START_TIME,FLOW_LAUNCH_END_TIME);
 		} else if (fsModeLongRTT == 1) {
-			flowSize = gen_random_cdf(cdfTable);
-			while (flowSize == 0) { 
-				flowSize = gen_random_cdf(cdfTable); 
-			}
+			// flowSize = gen_random_cdf(cdfTable);
+			// while (flowSize == 0) { 
+			// 	flowSize = gen_random_cdf(cdfTable); 
+			// }
+			flowSize = bursts_list.at(node);
 			if (longRTTStartTime == 0) {
 				startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
 			} else {
@@ -719,10 +741,10 @@ main (int argc, char *argv[])
 			}
 		} else if (fsModeLongRTT == 2) {
 			// AnnC: for random size alignment
-			flowSize = gen_random_cdf(cdfTable);
-			while (flowSize == 0) { 
-				flowSize = gen_random_cdf(cdfTable); 
-			}
+			// flowSize = gen_random_cdf(cdfTable);
+			// while (flowSize == 0) { 
+			// 	flowSize = gen_random_cdf(cdfTable); 
+			// }
 			flowSize = 1;
 			if (longRTTStartTime == 0) {
 				startTimeLongRTT = START_TIME + 0.1 + poission_gen_interval(0.2);
@@ -781,6 +803,7 @@ main (int argc, char *argv[])
 	// } else {
 	// 	startTime = shortRTTStartTime/1000;
 	// }
+	paramfile << "number of short-RTT flows = " << numShortRTT << "\n";
 	for (uint32_t node=0; node<numShortRTT; node++) {
 		uint64_t flowSize = 0;
 		double startTime = 0;
@@ -788,10 +811,11 @@ main (int argc, char *argv[])
 			flowSize = 1e9;
 			startTime = rand_range(START_TIME,FLOW_LAUNCH_END_TIME);
 		} else if (fsModeShortRTT == 1) {
-			flowSize = gen_random_cdf(cdfTable);
-			while (flowSize == 0) { 
-				flowSize = gen_random_cdf(cdfTable); 
-			}
+			// flowSize = gen_random_cdf(cdfTable);
+			// while (flowSize == 0) { 
+			// 	flowSize = gen_random_cdf(cdfTable); 
+			// }
+			flowSize = bursts_list.at(node);
 			if (shortRTTStartTime == 0) {
 				startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
 			} else {
