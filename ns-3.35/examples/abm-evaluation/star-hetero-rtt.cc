@@ -355,7 +355,8 @@ main (int argc, char *argv[])
 	uint64_t flowSize = 0;
 	while (currBurstSize < minBurstSize) {
 		flowSize = gen_random_cdf(cdfTable);
-		while (flowSize == 0) { 
+		// AnnC: make sure all flow sizes are unique; just for the convenience of comparing FCTs
+		while (flowSize == 0 || std::find(bursts_list.begin(), bursts_list.end(), flowSize)!=bursts_list.end()) { 
 			flowSize = gen_random_cdf(cdfTable); 
 		}
 		bursts_list.push_back(flowSize);
