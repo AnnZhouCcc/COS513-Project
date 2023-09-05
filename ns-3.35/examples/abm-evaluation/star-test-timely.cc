@@ -352,28 +352,30 @@ main (int argc, char *argv[])
 
 	std::vector<uint64_t> bursts_list;
 	uint64_t currBurstSize = 0;
-	uint64_t flowSize = 0;
-	while (currBurstSize < minBurstSize) {
-		flowSize = gen_random_cdf(cdfTable);
-		// AnnC: make sure all flow sizes are unique; just for the convenience of comparing FCTs
-		while (flowSize == 0 || std::find(bursts_list.begin(), bursts_list.end(), flowSize)!=bursts_list.end()) { 
-			flowSize = gen_random_cdf(cdfTable); 
-		}
-		bursts_list.push_back(flowSize);
-		currBurstSize += flowSize;
-	}
-	uint32_t numBursts = bursts_list.size();
-	numLongRTTFlows = numBursts;
-	// numShortRTTFlows = numBursts;
-
 	std::vector<double> add_burst_times;
-	double addStartTimeS = 0;
-	for (uint32_t i=0; i<numBursts; i++) {
-		addStartTimeS = rand_range(0.0,burstStartRange)/1000000000;
-		while (addStartTimeS == 0) { 
-			addStartTimeS = rand_range(0.0,burstStartRange)/1000000000;
+	if (fsModeLongRTT == 1) {
+		uint64_t flowSize = 0;
+		while (currBurstSize < minBurstSize) {
+			flowSize = gen_random_cdf(cdfTable);
+			// AnnC: make sure all flow sizes are unique; just for the convenience of comparing FCTs
+			while (flowSize == 0 || std::find(bursts_list.begin(), bursts_list.end(), flowSize)!=bursts_list.end()) { 
+				flowSize = gen_random_cdf(cdfTable); 
+			}
+			bursts_list.push_back(flowSize);
+			currBurstSize += flowSize;
 		}
-		add_burst_times.push_back(addStartTimeS);
+		uint32_t numBursts = bursts_list.size();
+		numLongRTTFlows = numBursts;
+		// numShortRTTFlows = numBursts;
+
+		double addStartTimeS = 0;
+		for (uint32_t i=0; i<numBursts; i++) {
+			addStartTimeS = rand_range(0.0,burstStartRange)/1000000000;
+			while (addStartTimeS == 0) { 
+				addStartTimeS = rand_range(0.0,burstStartRange)/1000000000;
+			}
+			add_burst_times.push_back(addStartTimeS);
+		}
 	}
 
 	// NodeContainer nodecontainers;
@@ -463,7 +465,7 @@ main (int argc, char *argv[])
 			// Config::SetDefault("ns3::TcpSocketState::TimelyThigh", UintegerValue(((serverLeafLinkLatencyLongRTT+leafSinkLinkLatencyLongRTT)*2*1.5)*1000)); // in nanoseconds
 			// AnnC: ignore Tlow and Thigh for now
 			Config::SetDefault("ns3::TcpSocketState::TimelyTlow", UintegerValue(0));
-			Config::SetDefault("ns3::TcpSocketState::TimelyThigh", UintegerValue(10*GIGA));
+			Config::SetDefault("ns3::TcpSocketState::TimelyThigh", UintegerValue(GIGA));
 			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
 			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
 			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
