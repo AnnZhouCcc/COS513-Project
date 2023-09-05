@@ -56,7 +56,7 @@ extern "C"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("STAR_HETERO_RTT");
+NS_LOG_COMPONENT_DEFINE ("STAR_TEST_TIMELY");
 
 double alpha_values[8]={1};
 
@@ -152,15 +152,15 @@ main (int argc, char *argv[])
 	uint64_t serverLeafCapacity = 1;
 	uint64_t leafSinkCapacity = 1;
 	double serverLeafLinkLatencyLongRTT = 10;
-	double serverLeafLinkLatencyShortRTT = 10;
+	// double serverLeafLinkLatencyShortRTT = 10;
 	double leafSinkLinkLatencyLongRTT = 10;
-	double leafSinkLinkLatencyShortRTT = 1;
+	// double leafSinkLinkLatencyShortRTT = 1;
 	cmd.AddValue("serverLeafCapacity", "Server <-> Leaf capacity in Gbps", serverLeafCapacity);
 	cmd.AddValue("leafSinkCapacity", "Leaf <-> Sink capacity in Gbps", leafSinkCapacity);
 	cmd.AddValue("serverLeafLinkLatencyLongRTT", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatencyLongRTT);
-	cmd.AddValue("serverLeafLinkLatencyShortRTT", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatencyShortRTT);
+	// cmd.AddValue("serverLeafLinkLatencyShortRTT", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatencyShortRTT);
 	cmd.AddValue("leafSinkLinkLatencyLongRTT", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatencyLongRTT);
-	cmd.AddValue("leafSinkLinkLatencyShortRTT", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatencyShortRTT);
+	// cmd.AddValue("leafSinkLinkLatencyShortRTT", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatencyShortRTT);
 
 	uint32_t TcpProt=CUBIC;
 	cmd.AddValue("TcpProt","Tcp protocol",TcpProt);
@@ -217,29 +217,29 @@ main (int argc, char *argv[])
 	cmd.AddValue ("numNodes", "number of nodes", numNodes);
 
 	double longRTTAlpha = 1;
-	double shortRTTAlpha = 1;
+	// double shortRTTAlpha = 1;
 	cmd.AddValue("longRTTAlpha","the alpha value for long-RTT flows",longRTTAlpha);
-	cmd.AddValue("shortRTTAlpha","the alpha value for short-RTT flows",shortRTTAlpha);
+	// cmd.AddValue("shortRTTAlpha","the alpha value for short-RTT flows",shortRTTAlpha);
 
 	uint32_t numLongRTTFlows = 10;
-	uint32_t numShortRTTFlows = 10;
+	// uint32_t numShortRTTFlows = 10;
 	cmd.AddValue("numLongRTTFlows","number of long-RTT flows",numLongRTTFlows);
-	cmd.AddValue("numShortRTTFlows","number of short-RTT flows",numShortRTTFlows);
+	// cmd.AddValue("numShortRTTFlows","number of short-RTT flows",numShortRTTFlows);
 
 	uint32_t fsModeLongRTT = 0;
-	uint32_t fsModeShortRTT = 0;
+	// uint32_t fsModeShortRTT = 0;
 	cmd.AddValue("fsModeLongRTT","0:continuous flow, 1: bursty flow, 2: no flow",fsModeLongRTT);
-	cmd.AddValue("fsModeShortRTT","0:continuous flow, 1: bursty flow, 2: no flow",fsModeShortRTT);
+	// cmd.AddValue("fsModeShortRTT","0:continuous flow, 1: bursty flow, 2: no flow",fsModeShortRTT);
 
 	uint32_t longRTTIW = 4;
-	uint32_t shortRTTIW = 4;
+	// uint32_t shortRTTIW = 4;
 	cmd.AddValue("longRTTInitialWindow","initial window size for long-RTT flows",longRTTIW);
-	cmd.AddValue("shortRTTInitialWindow","initial window size for short-RTT flows",shortRTTIW);
+	// cmd.AddValue("shortRTTInitialWindow","initial window size for short-RTT flows",shortRTTIW);
 
 	double longRTTStartTime = 0;
-	double shortRTTStartTime = 0;
+	// double shortRTTStartTime = 0;
 	cmd.AddValue("longRTTStartTime","start time of long-RTT flows in ms; 0 for random",longRTTStartTime);
-	cmd.AddValue("shortRTTStartTime","start time of short-RTT flows in ms; 0 for random",shortRTTStartTime);
+	// cmd.AddValue("shortRTTStartTime","start time of short-RTT flows in ms; 0 for random",shortRTTStartTime);
 
 	uint64_t minBurstSize = 100000000;
 	double burstStartRange = 1000000;
@@ -309,12 +309,12 @@ main (int argc, char *argv[])
 	// AnnC: hard-code alpha for the first queue to be 8
 	alpha_values[0] = 8; //for ACK packets
 	alpha_values[1] = longRTTAlpha; //for long-RTT flows
-	alpha_values[2] = shortRTTAlpha; //for short-RTT flows
+	// alpha_values[2] = shortRTTAlpha; //for short-RTT flows
 	aFile.close();
 
-	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatencyLongRTT+leafSinkCapacity*leafSinkLinkLatencyLongRTT + serverLeafCapacity*serverLeafLinkLatencyShortRTT+leafSinkCapacity*leafSinkLinkLatencyShortRTT)*GIGA*1e-6)/8;
+	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatencyLongRTT+leafSinkCapacity*leafSinkLinkLatencyLongRTT)*2*GIGA*1e-6)/8;
 	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
-	baseRTTNano = (serverLeafLinkLatencyLongRTT+serverLeafLinkLatencyShortRTT+leafSinkLinkLatencyLongRTT+leafSinkLinkLatencyShortRTT)*1e3;
+	baseRTTNano = (serverLeafLinkLatencyLongRTT+leafSinkLinkLatencyLongRTT)*2*1e3;
 	// nicBw = serverLeafCapacity+leafSinkCapacity;
 
     // Config::SetDefault("ns3::GenQueueDisc::updateInterval", UintegerValue(alphaUpdateInterval*linkLatency*8*1000));
@@ -364,7 +364,7 @@ main (int argc, char *argv[])
 	}
 	uint32_t numBursts = bursts_list.size();
 	numLongRTTFlows = numBursts;
-	numShortRTTFlows = numBursts;
+	// numShortRTTFlows = numBursts;
 
 	std::vector<double> add_burst_times;
 	double addStartTimeS = 0;
@@ -380,8 +380,8 @@ main (int argc, char *argv[])
 	// nodecontainers.Create(numNodes);
 	NodeContainer longRTTnodecontainers;
 	longRTTnodecontainers.Create(numLongRTTFlows);
-	NodeContainer shortRTTnodecontainers;
-	shortRTTnodecontainers.Create(numShortRTTFlows);
+	// NodeContainer shortRTTnodecontainers;
+	// shortRTTnodecontainers.Create(numShortRTTFlows);
 	NodeContainer nd;
 	nd.Create (1);
 	NodeContainer sinkcontainers; 
@@ -447,6 +447,31 @@ main (int argc, char *argv[])
 		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
 			for(uint32_t num=0;num<nPrior;num++){
 				tc.AddChildQueueDisc (handle, cid[num], "ns3::RedQueueDisc", "MinTh", DoubleValue (RedMinTh*PACKET_SIZE), "MaxTh", DoubleValue (RedMaxTh*PACKET_SIZE));
+			}
+			break;
+		case TIMELY:
+			Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
+			Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
+			Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(leafSinkCapacity*GIGA)));
+			Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("50Mbps")));
+			Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(leafSinkCapacity*GIGA)));
+			Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("10Mbps")));
+			Config::SetDefault("ns3::TcpSocketState::HighAIWien", DataRateValue(DataRate("150Mbps")));
+			Config::SetDefault("ns3::TcpSocketState::useTimely", BooleanValue(true));
+			Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds((serverLeafLinkLatencyLongRTT+leafSinkLinkLatencyLongRTT)*2 + double(PACKET_SIZE*8)/(serverLeafCapacity*1000) + double(PACKET_SIZE*8)/(leafSinkCapacity*1000))));
+			// Config::SetDefault("ns3::TcpSocketState::TimelyTlow", UintegerValue(((serverLeafLinkLatencyLongRTT+leafSinkLinkLatencyLongRTT)*2*1.5)*1000)); // in nanoseconds
+			// Config::SetDefault("ns3::TcpSocketState::TimelyThigh", UintegerValue(((serverLeafLinkLatencyLongRTT+leafSinkLinkLatencyLongRTT)*2*1.5)*1000)); // in nanoseconds
+			// AnnC: ignore Tlow and Thigh for now
+			Config::SetDefault("ns3::TcpSocketState::TimelyTlow", UintegerValue(0));
+			Config::SetDefault("ns3::TcpSocketState::TimelyThigh", UintegerValue(10*GIGA));
+			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
+			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
+			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
+			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
+			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
+		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
+			for(uint32_t num=0;num<nPrior;num++){
+				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
 			}
 			break;
 		default:
@@ -540,35 +565,35 @@ main (int argc, char *argv[])
 		address.Assign (netDeviceContainer);
 	}
 
-	///////////////////////////////////
-	// An access link with short RTT //
-	///////////////////////////////////
-	PointToPointHelper accessLink;
-	accessLink.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
-	accessLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(serverLeafLinkLatencyShortRTT)));
-	// if (dropTail) {
-	// 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
-	// }
+	// ///////////////////////////////////
+	// // An access link with short RTT //
+	// ///////////////////////////////////
+	// PointToPointHelper accessLink;
+	// accessLink.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
+	// accessLink.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(serverLeafLinkLatencyShortRTT)));
+	// // if (dropTail) {
+	// // 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
+	// // }
 
-	/* Server <--> Leaf */
-	// std::cout << "nodecontainers.GetN()=" << nodecontainers.GetN() << std::endl;
-	for (uint32_t server=0; server<shortRTTnodecontainers.GetN(); server++) {
-		NetDeviceContainer netDeviceContainer = accessLink.Install(shortRTTnodecontainers.Get(server), nd.Get(0));
-		QueueDiscContainer queuedisc = tc.Install(netDeviceContainer.Get(1));
-		bottleneckQueueDiscs.Add(queuedisc.Get(0));
-		Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
-		genDisc->SetPortId(portid++);
-		// AnnC: [artemis-star-topology] Assume to be DT.
-		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		genDisc->setPortBw(serverLeafCapacity);
-		genDisc->SetSharedMemory(sharedMemory);
-		genDisc->SetBufferAlgorithm(DT);
-		for(uint32_t n=0;n<nPrior;n++){
-			genDisc->alphas[n] = alpha_values[n];
-		}
-		address.NewNetwork ();
-		address.Assign (netDeviceContainer);
-	}
+	// /* Server <--> Leaf */
+	// // std::cout << "nodecontainers.GetN()=" << nodecontainers.GetN() << std::endl;
+	// for (uint32_t server=0; server<shortRTTnodecontainers.GetN(); server++) {
+	// 	NetDeviceContainer netDeviceContainer = accessLink.Install(shortRTTnodecontainers.Get(server), nd.Get(0));
+	// 	QueueDiscContainer queuedisc = tc.Install(netDeviceContainer.Get(1));
+	// 	bottleneckQueueDiscs.Add(queuedisc.Get(0));
+	// 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (queuedisc.Get(0));
+	// 	genDisc->SetPortId(portid++);
+	// 	// AnnC: [artemis-star-topology] Assume to be DT.
+	// 	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	// 	genDisc->setPortBw(serverLeafCapacity);
+	// 	genDisc->SetSharedMemory(sharedMemory);
+	// 	genDisc->SetBufferAlgorithm(DT);
+	// 	for(uint32_t n=0;n<nPrior;n++){
+	// 		genDisc->alphas[n] = alpha_values[n];
+	// 	}
+	// 	address.NewNetwork ();
+	// 	address.Assign (netDeviceContainer);
+	// }
 
 	std::cout << "done with server<->leaf links" << std::endl;
 
@@ -641,71 +666,71 @@ main (int argc, char *argv[])
 	nsInterface.Add (interfacesBottleneck.Get (1));
 
 
-	///////////////////////////////
-	// A bottleneck link with short RTT
-	///////////////////////////////
-	PointToPointHelper bottleneckLinkShortRTT;
-	bottleneckLinkShortRTT.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
-	bottleneckLinkShortRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatencyShortRTT)));
-	// if (dropTail) {
-	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
+	// ///////////////////////////////
+	// // A bottleneck link with short RTT
+	// ///////////////////////////////
+	// PointToPointHelper bottleneckLinkShortRTT;
+	// bottleneckLinkShortRTT.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
+	// bottleneckLinkShortRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatencyShortRTT)));
+	// // if (dropTail) {
+	// // 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
+	// // }
+
+	// /* Leaf <--> Sink */
+	// sink=1;
+	// NetDeviceContainer devicesBottleneckLinkShortRTT = bottleneckLinkShortRTT.Install (nd.Get (0), sinkcontainers.Get (sink));
+	// QueueDiscContainer qdiscsShortRTT = tc.Install (devicesBottleneckLinkShortRTT.Get(0));
+	// bottleneckQueueDiscs.Add(qdiscsShortRTT.Get(0));
+	// Ptr<GenQueueDisc> genDiscShortRTT = DynamicCast<GenQueueDisc> (qdiscsShortRTT.Get(0));
+	// genDiscShortRTT->SetPortId(portid++);
+	// genDiscShortRTT->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
+	// genDiscShortRTT->setPortBw(leafSinkCapacity);
+	// genDiscShortRTT->SetSharedMemory(sharedMemory);
+	// switch(algorithm){
+	// 	case DT:
+	// 		genDiscShortRTT->SetBufferAlgorithm(DT);
+	// 		for(uint32_t n=0;n<nPrior;n++){
+	// 			genDiscShortRTT->alphas[n] = alpha_values[n];
+	// 		}
+	// 		break;
+	// 	case FAB:
+	// 		genDiscShortRTT->SetBufferAlgorithm(FAB);
+	// 		genDiscShortRTT->SetFabWindow(MicroSeconds(5000));
+	// 		genDiscShortRTT->SetFabThreshold(15*PACKET_SIZE);
+	// 		for(uint32_t n=0;n<nPrior;n++){
+	// 			genDiscShortRTT->alphas[n] = alpha_values[n];
+	// 		}
+	// 		break;
+	// 	case CS:
+	// 		genDiscShortRTT->SetBufferAlgorithm(CS);
+	// 		for(uint32_t n=0;n<nPrior;n++){
+	// 			genDiscShortRTT->alphas[n] = alpha_values[n];
+	// 		}
+	// 		break;
+	// 	case IB:
+	// 		genDiscShortRTT->SetBufferAlgorithm(IB);
+	// 		genDiscShortRTT->SetAfdWindow(MicroSeconds(50));
+	// 		genDiscShortRTT->SetDppWindow(MicroSeconds(5000));
+	// 		genDiscShortRTT->SetDppThreshold(RTTPackets);
+	// 		for(uint32_t n=0;n<nPrior;n++){
+	// 			genDiscShortRTT->alphas[n] = alpha_values[n];
+	// 			genDiscShortRTT->SetQrefAfd(n,uint32_t(RTTBytes));
+	// 		}
+	// 		break;
+	// 	case ABM:
+	// 		genDiscShortRTT->SetBufferAlgorithm(ABM);
+	// 		for(uint32_t n=0;n<nPrior;n++){
+	// 			genDiscShortRTT->alphas[n] = alpha_values[n];
+	// 		}
+	// 		break;
+	// 	default:
+	// 		std::cout << "Error in buffer management configuration. Exiting!";
+	// 		return 0;
 	// }
 
-	/* Leaf <--> Sink */
-	sink=1;
-	NetDeviceContainer devicesBottleneckLinkShortRTT = bottleneckLinkShortRTT.Install (nd.Get (0), sinkcontainers.Get (sink));
-	QueueDiscContainer qdiscsShortRTT = tc.Install (devicesBottleneckLinkShortRTT.Get(0));
-	bottleneckQueueDiscs.Add(qdiscsShortRTT.Get(0));
-	Ptr<GenQueueDisc> genDiscShortRTT = DynamicCast<GenQueueDisc> (qdiscsShortRTT.Get(0));
-	genDiscShortRTT->SetPortId(portid++);
-	genDiscShortRTT->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-	genDiscShortRTT->setPortBw(leafSinkCapacity);
-	genDiscShortRTT->SetSharedMemory(sharedMemory);
-	switch(algorithm){
-		case DT:
-			genDiscShortRTT->SetBufferAlgorithm(DT);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDiscShortRTT->alphas[n] = alpha_values[n];
-			}
-			break;
-		case FAB:
-			genDiscShortRTT->SetBufferAlgorithm(FAB);
-			genDiscShortRTT->SetFabWindow(MicroSeconds(5000));
-			genDiscShortRTT->SetFabThreshold(15*PACKET_SIZE);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDiscShortRTT->alphas[n] = alpha_values[n];
-			}
-			break;
-		case CS:
-			genDiscShortRTT->SetBufferAlgorithm(CS);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDiscShortRTT->alphas[n] = alpha_values[n];
-			}
-			break;
-		case IB:
-			genDiscShortRTT->SetBufferAlgorithm(IB);
-			genDiscShortRTT->SetAfdWindow(MicroSeconds(50));
-			genDiscShortRTT->SetDppWindow(MicroSeconds(5000));
-			genDiscShortRTT->SetDppThreshold(RTTPackets);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDiscShortRTT->alphas[n] = alpha_values[n];
-				genDiscShortRTT->SetQrefAfd(n,uint32_t(RTTBytes));
-			}
-			break;
-		case ABM:
-			genDiscShortRTT->SetBufferAlgorithm(ABM);
-			for(uint32_t n=0;n<nPrior;n++){
-				genDiscShortRTT->alphas[n] = alpha_values[n];
-			}
-			break;
-		default:
-			std::cout << "Error in buffer management configuration. Exiting!";
-			return 0;
-	}
-
-	address.NewNetwork ();
-	Ipv4InterfaceContainer interfacesBottleneckShortRTT = address.Assign (devicesBottleneckLinkShortRTT);
-	nsInterface.Add (interfacesBottleneckShortRTT.Get (1));
+	// address.NewNetwork ();
+	// Ipv4InterfaceContainer interfacesBottleneckShortRTT = address.Assign (devicesBottleneckLinkShortRTT);
+	// nsInterface.Add (interfacesBottleneckShortRTT.Get (1));
 
 
 	std::cout << "start installing applications" << std::endl;
@@ -716,7 +741,7 @@ main (int argc, char *argv[])
   	paramfile.open (paramOutFile);
 
 	uint32_t numLongRTT = numLongRTTFlows;
-	uint32_t numShortRTT = numShortRTTFlows;
+	// uint32_t numShortRTT = numShortRTTFlows;
 	// sink0 receives long-RTT flows, sink1 receives short-RTT flows
 	// uint32_t nodetosink[numNodes] = {0};
 	// for (uint32_t i=0; i<numLongRTT; i++) {
@@ -818,80 +843,80 @@ main (int argc, char *argv[])
 	// } else {
 	// 	startTime = shortRTTStartTime/1000;
 	// }
-	paramfile << "number of short-RTT flows = " << numShortRTT << "\n";
-	for (uint32_t node=0; node<numShortRTT; node++) {
-		uint64_t flowSize = 0;
-		double startTime = 0;
-		if (fsModeShortRTT == 0) {
-			flowSize = 1e9;
-			startTime = rand_range(START_TIME,FLOW_LAUNCH_END_TIME);
-		} else if (fsModeShortRTT == 1) {
-			// flowSize = gen_random_cdf(cdfTable);
-			// while (flowSize == 0) { 
-			// 	flowSize = gen_random_cdf(cdfTable); 
-			// }
-			flowSize = bursts_list.at(node);
-			// if (shortRTTStartTime == 0) {
-			// 	startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
-			// } else {
-			// 	startTime = shortRTTStartTime/1000;
-			// }
-			startTime = shortRTTStartTime/1000 + add_burst_times.at(node);
-		} else if (fsModeShortRTT == 2) {
-			flowSize = 1;
-			if (shortRTTStartTime == 0) {
-				startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
-			} else {
-				startTime = shortRTTStartTime/1000;
-			}
-		}
-		// AnnC: manually increase bursty flow size
-		//if (flowSize < 1e8) flowSize=flowSize*10;
-		//double startTime = START_TIME + 1 + poission_gen_interval(0.2);
-		//while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
-		//	startTime = START_TIME + 1 + poission_gen_interval(0.2);
-		//}
-		// ACK packets are prioritized
-		//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
-		uint64_t flowPriority = 2;
+	// paramfile << "number of short-RTT flows = " << numShortRTT << "\n";
+	// for (uint32_t node=0; node<numShortRTT; node++) {
+	// 	uint64_t flowSize = 0;
+	// 	double startTime = 0;
+	// 	if (fsModeShortRTT == 0) {
+	// 		flowSize = 1e9;
+	// 		startTime = rand_range(START_TIME,FLOW_LAUNCH_END_TIME);
+	// 	} else if (fsModeShortRTT == 1) {
+	// 		// flowSize = gen_random_cdf(cdfTable);
+	// 		// while (flowSize == 0) { 
+	// 		// 	flowSize = gen_random_cdf(cdfTable); 
+	// 		// }
+	// 		flowSize = bursts_list.at(node);
+	// 		// if (shortRTTStartTime == 0) {
+	// 		// 	startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
+	// 		// } else {
+	// 		// 	startTime = shortRTTStartTime/1000;
+	// 		// }
+	// 		startTime = shortRTTStartTime/1000 + add_burst_times.at(node);
+	// 	} else if (fsModeShortRTT == 2) {
+	// 		flowSize = 1;
+	// 		if (shortRTTStartTime == 0) {
+	// 			startTime = START_TIME + 0.1 + poission_gen_interval(0.2);
+	// 		} else {
+	// 			startTime = shortRTTStartTime/1000;
+	// 		}
+	// 	}
+	// 	// AnnC: manually increase bursty flow size
+	// 	//if (flowSize < 1e8) flowSize=flowSize*10;
+	// 	//double startTime = START_TIME + 1 + poission_gen_interval(0.2);
+	// 	//while (startTime >= FLOW_LAUNCH_END_TIME || startTime <= START_TIME) {
+	// 	//	startTime = START_TIME + 1 + poission_gen_interval(0.2);
+	// 	//}
+	// 	// ACK packets are prioritized
+	// 	//uint64_t flowPriority = rand_range((u_int32_t)1,nPrior-1);
+	// 	uint64_t flowPriority = 2;
 
-		// uint32_t sink = nodetosink[numLongRTT+node];
-		uint32_t sink = 1;
-		InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
-		Address sinkAddress(ad);
+	// 	// uint32_t sink = nodetosink[numLongRTT+node];
+	// 	uint32_t sink = 1;
+	// 	InetSocketAddress ad(nsInterface.GetAddress(sink), portnumber);
+	// 	Address sinkAddress(ad);
 
-		paramfile << "Sending from node " << node << " to sink " << sink << ": ";
-		paramfile << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << "\n";
+	// 	paramfile << "Sending from node " << node << " to sink " << sink << ": ";
+	// 	paramfile << "startTime=" << startTime << ", flowSize=" << flowSize << ", flowPriority=" << flowPriority << "\n";
 
-		Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
-		bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
-		bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
-		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
-        bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
-		bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
-		bulksend->SetAttribute("InitialCwnd", UintegerValue (shortRTTIW));
-		bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
-		bulksend->SetAttribute("priority",UintegerValue(flowPriority));
-		bulksend->SetStartTime (Seconds(startTime));
-		// std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
-        bulksend->SetStopTime (Seconds (END_TIME));
-		shortRTTnodecontainers.Get(node)->AddApplication(bulksend);
+	// 	Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
+	// 	bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+	// 	bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
+	// 	bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
+    //     bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
+	// 	bulksend->SetAttribute("FlowId", UintegerValue(flowcount++));
+	// 	bulksend->SetAttribute("InitialCwnd", UintegerValue (shortRTTIW));
+	// 	bulksend->SetAttribute("priorityCustom",UintegerValue(flowPriority));
+	// 	bulksend->SetAttribute("priority",UintegerValue(flowPriority));
+	// 	bulksend->SetStartTime (Seconds(startTime));
+	// 	// std::cout << "node=" << node << ", start_time=" << Seconds(startTime) << std::endl;
+    //     bulksend->SetStopTime (Seconds (END_TIME));
+	// 	shortRTTnodecontainers.Get(node)->AddApplication(bulksend);
 
-		PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
-		ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
-		sinkApp.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
-		sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
-		sinkApp.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
-		sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
-		// ACK packets are prioritized
-		sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
-		sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
-		sinkApp.Start(Seconds(startTime));
-		sinkApp.Stop(Seconds(END_TIME));
-		sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
+	// 	PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
+	// 	ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
+	// 	sinkApp.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+	// 	sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
+	// 	sinkApp.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
+	// 	sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
+	// 	// ACK packets are prioritized
+	// 	sinkApp.Get(0)->SetAttribute("priorityCustom",UintegerValue(0));
+	// 	sinkApp.Get(0)->SetAttribute("priority",UintegerValue(0));
+	// 	sinkApp.Start(Seconds(startTime));
+	// 	sinkApp.Stop(Seconds(END_TIME));
+	// 	sinkApp.Get(0)->TraceConnectWithoutContext("FlowFinish", MakeBoundCallback(&TraceMsgFinish, fctOutput));
 		
-		portnumber++;
-	}
+	// 	portnumber++;
+	// }
 
 	paramfile.close();
 
