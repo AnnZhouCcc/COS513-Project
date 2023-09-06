@@ -589,9 +589,11 @@ def write_fct_comparison_hetero_rtt_bb(dir,buffer_list,buffer_offset,burst_list,
 			burstsize = br*burst_offset
 			for seed in range(1,11):
 				bothfile = dir+"fcts-hetero-rtt-"+str(buffersize)+"-"+str(burstsize)+"-1-1-"+str(seed)+".fct"
-				longfile = dir+"fcts-hetero-rtt-"+str(buffersize)+"-"+str(burstsize)+"-2-1-"+str(seed)+".fct"
-				shortfile = dir+"fcts-hetero-rtt-"+str(buffersize)+"-"+str(burstsize)+"-1-2-"+str(seed)+".fct"
-				writefile = dir+"fcts_comparison"+str(buffersize)+"-"+str(burstsize)+str(seed)+".txt"
+				longfile = dir+"fcts-hetero-rtt-"+str(buffersize)+"-"+str(burstsize)+"-1-2-"+str(seed)+".fct"
+				shortfile = dir+"fcts-hetero-rtt-"+str(buffersize)+"-"+str(burstsize)+"-2-1-"+str(seed)+".fct"
+				writefile = dir+"fcts-comparison-"+str(buffersize)+"-"+str(burstsize)+"-"+str(seed)+".txt"
+
+				print(f"buffer={buffersize},burst={burstsize},seed={seed}")
 
 				mapsizefcts = dict()
 				with open(bothfile) as bothf:
@@ -661,7 +663,7 @@ def write_fct_comparison_hetero_rtt_bb(dir,buffer_list,buffer_offset,burst_list,
 						short_only_fct = fcts["short_only"]
 						f.write(f"{flowsize}\t{long_both_fct}\t{long_only_fct}\t{long_both_fct/long_only_fct}\t{short_both_fct}\t{short_only_fct}\t{short_both_fct/short_only_fct}\n")
 
-				return
+	return
 			
 
 def write_header_by_summarize_hetero_rtt_bb(outfile, burst_list, burst_offset):
@@ -682,9 +684,16 @@ def write_column0_by_summarize_hetero_rtt_bb(outfile, buffer):
 	return
 
 
+def write_linebreak_by_summarize_hetero_rtt_bb(outfile):
+	f = open(outfile, "a")
+	f.write("\n")
+	f.close()
+	return
+
+
 def write_data_by_summarize_hetero_rtt_bb(outfile, allseedslist):
 	f = open(outfile, "a")
-	f.write(do_avg(allseedslist)+"\t")
+	f.write(str(do_avg(allseedslist))+"\t")
 	f.close()
 
 
@@ -692,7 +701,7 @@ def count_numnodes_from_fct_comparison_file(fctcomparisonfile):
 	with open(fctcomparisonfile) as f:
 		for i, _ in enumerate(f):
 			pass
-		return i+1-1
+	return i+1-1
 
 
 def summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, burst_list, burst_offset, numqueuesperport, numsinks):
@@ -701,8 +710,8 @@ def summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, burst_list, burst_o
 	outfile_fct = dir + "fct_longonly.txt"
 	outfile_moresentbytes = dir + "moresentbytes.txt"
 	outfile_totaldrop = dir + "totaldrop_longonly.txt"
-	outfile_dropincrease_long = dir + "dropincrease.txt_long"
-	outfile_dropincrease_short = dir + "dropincrease.txt_short"
+	outfile_dropincrease_long = dir + "dropincrease_long.txt"
+	outfile_dropincrease_short = dir + "dropincrease_short.txt"
 
 	write_header_by_summarize_hetero_rtt_bb(outfile_fctslowdown_long,burst_list,burst_offset)
 	write_header_by_summarize_hetero_rtt_bb(outfile_fctslowdown_short,burst_list,burst_offset)
@@ -728,6 +737,8 @@ def summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, burst_list, burst_o
 		for br in burst_list:
 			burst = br*burst_offset
 
+			print(f"buffer={buffer},burst={burst}")
+
 			fctslowdown_long_allseedslist = list()
 			fctslowdown_short_allseedslist = list()
 			fct_allseedslist = list()
@@ -738,7 +749,7 @@ def summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, burst_list, burst_o
 
 			for seed in range(1,11):
 				# Read buffer from file
-				fctcomparisonfile = dir+"fcts_comparison"+str(buffer)+"-"+str(burst)+str(seed)+".txt"
+				fctcomparisonfile = dir+"fcts-comparison-"+str(buffer)+"-"+str(burst)+"-"+str(seed)+".txt"
 				torbothfile = dir+"tor-hetero-rtt-"+str(buffer)+"-"+str(burst)+"-1-1-"+str(seed)+".stat"
 				torlongfile = dir+"tor-hetero-rtt-"+str(buffer)+"-"+str(burst)+"-1-2-"+str(seed)+".stat"
 				torshortfile = dir+"tor-hetero-rtt-"+str(buffer)+"-"+str(burst)+"-2-1-"+str(seed)+".stat"
@@ -833,11 +844,19 @@ def summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, burst_list, burst_o
 			write_data_by_summarize_hetero_rtt_bb(outfile_dropincrease_long,dropincrease_long_allseedslist)
 			write_data_by_summarize_hetero_rtt_bb(outfile_dropincrease_short,dropincrease_short_allseedslist)
 
+		write_linebreak_by_summarize_hetero_rtt_bb(outfile_fctslowdown_long)
+		write_linebreak_by_summarize_hetero_rtt_bb(outfile_fctslowdown_short)
+		write_linebreak_by_summarize_hetero_rtt_bb(outfile_fct)
+		write_linebreak_by_summarize_hetero_rtt_bb(outfile_moresentbytes)
+		write_linebreak_by_summarize_hetero_rtt_bb(outfile_totaldrop)
+		write_linebreak_by_summarize_hetero_rtt_bb(outfile_dropincrease_long)
+		write_linebreak_by_summarize_hetero_rtt_bb(outfile_dropincrease_short)
+
 	return
 
 
 if __name__ == "__main__":
-	dir = "/u/az6922/data/hetero-rtt-bb-before-sep2/"
+	dir = "/u/az6922/data/hetero-rtt-bb-after-sep2/"
 	start_list = [0,4500]
 	iw_list = [10,20,30]
 	numcontinuous = 10
