@@ -857,4 +857,4 @@ if __name__ == "__main__":
 	#summarize_hetero_rtt(dir, buffer_list, buffer_offset, tmode, numqueuesperport, numnodes, numsinks)
 	burst_list = [1,2,3,4,5]
 	burst_offset = 100000000
-	summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, numqueuesperport, numsinks)
+	summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, burst_list, burst_offset, numqueuesperport, numsinks)
