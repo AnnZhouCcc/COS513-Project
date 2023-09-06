@@ -582,6 +582,260 @@ def summarize_hetero_rtt(dir, buffer_list, buffer_offset, tmode, numqueuesperpor
 	return
 
 
+def write_fct_comparison_hetero_rtt_bb(dir,buffer_list,buffer_offset,burst_list,burst_offset):
+	for b in buffer_list:
+		buffersize = b*buffer_offset
+		for br in burst_list:
+			burstsize = br*burst_offset
+			for seed in range(1,11):
+				bothfile = dir+"fcts-hetero-rtt-"+str(buffersize)+"-"+str(burstsize)+"-1-1-"+str(seed)+".fct"
+				longfile = dir+"fcts-hetero-rtt-"+str(buffersize)+"-"+str(burstsize)+"-2-1-"+str(seed)+".fct"
+				shortfile = dir+"fcts-hetero-rtt-"+str(buffersize)+"-"+str(burstsize)+"-1-2-"+str(seed)+".fct"
+				writefile = dir+"fcts_comparison"+str(buffersize)+"-"+str(burstsize)+str(seed)+".txt"
+
+				mapsizefcts = dict()
+				with open(bothfile) as bothf:
+					count = 0
+					for line in bothf:
+						count += 1
+						if count <= 1: continue
+						array = [x for x in line.split()]
+						flowsize = float(array[1])
+						fct = float(array[2])
+						priority = int(array[5])
+						if flowsize not in mapsizefcts:
+							mapsizefcts[flowsize] = dict()
+						if priority == 1:
+							label = "long_both"
+							if label in mapsizefcts[flowsize]:
+								print(f"Error! long_both already exists, bothfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+							mapsizefcts[flowsize][label] = fct
+						elif priority == 2:
+							label = "short_both"
+							if label in mapsizefcts[flowsize]:
+								print(f"Error! short_both already exists, bothfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+							mapsizefcts[flowsize][label] = fct
+
+				with open(longfile) as longf:
+					count = 0
+					for line in longf:
+						count += 1
+						if count <= 1: continue
+						array = [x for x in line.split()]
+						flowsize = float(array[1])
+						fct = float(array[2])
+						priority = int(array[5])
+						if priority == 2:
+							continue
+						if flowsize not in mapsizefcts:
+							print(f"Error! entry not already exist, longfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+						label = "long_only"
+						if label in mapsizefcts[flowsize]:
+							print(f"Error! long_only already exists, longfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+						mapsizefcts[flowsize][label] = fct
+
+				with open(shortfile) as shortf:
+					count = 0
+					for line in shortf:
+						count += 1
+						if count <= 1: continue
+						array = [x for x in line.split()]
+						flowsize = float(array[1])
+						fct = float(array[2])
+						priority = int(array[5])
+						if priority == 1:
+							continue
+						if flowsize not in mapsizefcts:
+							print(f"Error! entry not already exist, shortfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+						label = "short_only"
+						if label in mapsizefcts[flowsize]:
+							print(f"Error! short_only already exists, shortfile, flowsize={flowsize}, fct={fct}, priority={priority}")
+						mapsizefcts[flowsize][label] = fct
+
+				with open(writefile, "w") as f:
+					f.write(f"flowsize\tlong_both\tlong_only\tlong_ratio\tshort_both\tshort_only\tshort_ratio\n")
+					for flowsize,fcts in mapsizefcts.items():
+						long_both_fct = fcts["long_both"]
+						short_both_fct = fcts["short_both"]
+						long_only_fct = fcts["long_only"]
+						short_only_fct = fcts["short_only"]
+						f.write(f"{flowsize}\t{long_both_fct}\t{long_only_fct}\t{long_both_fct/long_only_fct}\t{short_both_fct}\t{short_only_fct}\t{short_both_fct/short_only_fct}\n")
+
+				return
+			
+
+def write_header_by_summarize_hetero_rtt_bb(outfile, burst_list, burst_offset):
+	f = open(outfile, "w")
+	f.write("buffer\\burst\t")
+	for br in burst_list:
+		burst = br*burst_offset
+		f.write(str(burst)+"\t")
+	f.write("\n")
+	f.close()
+	return
+
+
+def write_column0_by_summarize_hetero_rtt_bb(outfile, buffer):
+	f = open(outfile, "a")
+	f.write(str(buffer)+"\t")
+	f.close()
+	return
+
+
+def write_data_by_summarize_hetero_rtt_bb(outfile, allseedslist):
+	f = open(outfile, "a")
+	f.write(do_avg(allseedslist)+"\t")
+	f.close()
+
+
+def count_numnodes_from_fct_comparison_file(fctcomparisonfile):
+	with open(fctcomparisonfile) as f:
+		for i, _ in enumerate(f):
+			pass
+		return i+1-1
+
+
+def summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, burst_list, burst_offset, numqueuesperport, numsinks):
+	outfile_fctslowdown_long = dir + "fctslowdown_long.txt"
+	outfile_fctslowdown_short = dir + "fctslowdown_short.txt"
+	outfile_fct = dir + "fct_longonly.txt"
+	outfile_moresentbytes = dir + "moresentbytes.txt"
+	outfile_totaldrop = dir + "totaldrop_longonly.txt"
+	outfile_dropincrease_long = dir + "dropincrease.txt_long"
+	outfile_dropincrease_short = dir + "dropincrease.txt_short"
+
+	write_header_by_summarize_hetero_rtt_bb(outfile_fctslowdown_long,burst_list,burst_offset)
+	write_header_by_summarize_hetero_rtt_bb(outfile_fctslowdown_short,burst_list,burst_offset)
+	write_header_by_summarize_hetero_rtt_bb(outfile_fct,burst_list,burst_offset)
+	write_header_by_summarize_hetero_rtt_bb(outfile_moresentbytes,burst_list,burst_offset)
+	write_header_by_summarize_hetero_rtt_bb(outfile_totaldrop,burst_list,burst_offset)
+	write_header_by_summarize_hetero_rtt_bb(outfile_dropincrease_long,burst_list,burst_offset)
+	write_header_by_summarize_hetero_rtt_bb(outfile_dropincrease_short,burst_list,burst_offset)
+
+	write_fct_comparison_hetero_rtt_bb(dir,buffer_list,buffer_offset,burst_list,burst_offset)
+
+	for b in buffer_list:
+		buffer = b*buffer_offset
+
+		write_column0_by_summarize_hetero_rtt_bb(outfile_fctslowdown_long,buffer)
+		write_column0_by_summarize_hetero_rtt_bb(outfile_fctslowdown_short,buffer)
+		write_column0_by_summarize_hetero_rtt_bb(outfile_fct,buffer)
+		write_column0_by_summarize_hetero_rtt_bb(outfile_moresentbytes,buffer)
+		write_column0_by_summarize_hetero_rtt_bb(outfile_totaldrop,buffer)
+		write_column0_by_summarize_hetero_rtt_bb(outfile_dropincrease_long,buffer)
+		write_column0_by_summarize_hetero_rtt_bb(outfile_dropincrease_short,buffer)
+
+		for br in burst_list:
+			burst = br*burst_offset
+
+			fctslowdown_long_allseedslist = list()
+			fctslowdown_short_allseedslist = list()
+			fct_allseedslist = list()
+			moresentbytes_allseedslist = list()
+			totaldrop_allseedslist = list()
+			dropincrease_long_allseedslist = list()
+			dropincrease_short_allseedslist = list()
+
+			for seed in range(1,11):
+				# Read buffer from file
+				fctcomparisonfile = dir+"fcts_comparison"+str(buffer)+"-"+str(burst)+str(seed)+".txt"
+				torbothfile = dir+"tor-hetero-rtt-"+str(buffer)+"-"+str(burst)+"-1-1-"+str(seed)+".stat"
+				torlongfile = dir+"tor-hetero-rtt-"+str(buffer)+"-"+str(burst)+"-1-2-"+str(seed)+".stat"
+				torshortfile = dir+"tor-hetero-rtt-"+str(buffer)+"-"+str(burst)+"-2-1-"+str(seed)+".stat"
+
+				# count number of nodes
+				numnodes = count_numnodes_from_fct_comparison_file(fctcomparisonfile)
+				longrtt_queue_index = numqueuesperport*(numnodes+numsinks)-5
+				shortrtt_queue_index = numqueuesperport*(numnodes+numsinks)-1
+
+				# a list across all flows
+				fctslowdown_long_list = list()
+				fctslowdown_short_list = list()
+				fct_longonly_list = list()
+				# a list across all timestamps
+				sentbytes_longboth_list = list()
+				sentbytes_shortboth_list = list()
+				drop_longonly_list = list()
+				drop_longboth_list = list()
+				drop_shortonly_list = list()
+				drop_shortboth_list = list()
+
+				with open(fctcomparisonfile) as fctf:
+					line_count = 0
+					for line in fctf:
+						line_count += 1
+						if line_count <= 1: continue
+						array = [x for x in line.split()]
+
+						fctslowdown_long = float(array[3])
+						fctslowdown_short = float(array[6])
+						fct_longonly = float(array[2])
+
+						fctslowdown_long_list.append(fctslowdown_long)
+						fctslowdown_short_list.append(fctslowdown_short)
+						fct_longonly_list.append(fct_longonly)
+
+				with open(torbothfile) as bothf:
+					line_count = 0
+					for line in bothf:
+						line_count += 1
+						if line_count <= 1: continue
+						array = [x for x in line.split()]
+
+						longrtt_sent = float(array[3+5*longrtt_queue_index+2])
+						longrtt_drop = float(array[3+5*longrtt_queue_index+3])
+						shortrtt_sent = float(array[3+5*shortrtt_queue_index+2])
+						shortrtt_drop = float(array[3+5*shortrtt_queue_index+3])
+
+						sentbytes_longboth_list.append(longrtt_sent)
+						sentbytes_shortboth_list.append(shortrtt_sent)
+						drop_longboth_list.append(longrtt_drop)
+						drop_shortboth_list.append(shortrtt_drop)
+
+				with open(torlongfile) as longf:
+					line_count = 0
+					for line in longf:
+						line_count += 1
+						if line_count <= 1: continue
+						array = [x for x in line.split()]
+
+						# longrtt_sent = float(array[3+5*longrtt_queue_index+2])
+						longrtt_drop = float(array[3+5*longrtt_queue_index+3])
+
+						drop_longonly_list.append(longrtt_drop)
+
+				with open(torshortfile) as shortf:
+					line_count = 0
+					for line in shortf:
+						line_count += 1
+						if line_count <= 1: continue
+						array = [x for x in line.split()]
+
+						# shortrtt_sent = float(array[3+5*shortrtt_queue_index+2])
+						shortrtt_drop = float(array[3+5*shortrtt_queue_index+3])
+
+						drop_shortonly_list.append(shortrtt_drop)
+				
+				fctslowdown_long_allseedslist.append(do_avg(fctslowdown_long_list))
+				fctslowdown_short_allseedslist.append(do_avg(fctslowdown_short_list))
+				fct_allseedslist.append(do_avg(fct_longonly_list))
+
+				moresentbytes_allseedslist.append(sum(sentbytes_longboth_list)-sum(sentbytes_shortboth_list))
+				totaldrop_allseedslist.append(sum(drop_longonly_list))
+				dropincrease_long_allseedslist.append(sum(drop_longboth_list)-sum(drop_longonly_list))
+				dropincrease_short_allseedslist.append(sum(drop_shortboth_list)-sum(drop_shortonly_list))
+
+			write_data_by_summarize_hetero_rtt_bb(outfile_fctslowdown_long,fctslowdown_long_allseedslist)
+			write_data_by_summarize_hetero_rtt_bb(outfile_fctslowdown_short,fctslowdown_short_allseedslist)
+			write_data_by_summarize_hetero_rtt_bb(outfile_fct,fct_allseedslist)
+			write_data_by_summarize_hetero_rtt_bb(outfile_moresentbytes,moresentbytes_allseedslist)
+			write_data_by_summarize_hetero_rtt_bb(outfile_totaldrop,totaldrop_allseedslist)
+			write_data_by_summarize_hetero_rtt_bb(outfile_dropincrease_long,dropincrease_long_allseedslist)
+			write_data_by_summarize_hetero_rtt_bb(outfile_dropincrease_short,dropincrease_short_allseedslist)
+
+	return
+
+
 if __name__ == "__main__":
 	dir = "/u/az6922/data/hetero-rtt-cc-after-aug30/"
 	start_list = [0,4500]
@@ -597,7 +851,10 @@ if __name__ == "__main__":
 	pullingns = 1e7
 	# characterize_burst(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks, pullingns)
 	#summarize_drop(dir, start_list, iw_list, numcontinuous, numbursty, numqueuesperport, numnodes, numsinks)
-	buffer_list = [5,10,15,20,25,30,35,40,45,50]
+	buffer_list = [10,15,20,25,30,35,40,45]
 	buffer_offset = 100000
 	tmode = "aimd" # "slowstart", "aimd", "all"
-	summarize_hetero_rtt(dir, buffer_list, buffer_offset, tmode, numqueuesperport, numnodes, numsinks)
+	#summarize_hetero_rtt(dir, buffer_list, buffer_offset, tmode, numqueuesperport, numnodes, numsinks)
+	burst_list = [1,2,3,4,5]
+	burst_offset = 100000000
+	summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, numqueuesperport, numsinks)
