@@ -837,7 +837,7 @@ def summarize_hetero_rtt_bb(dir, buffer_list, buffer_offset, burst_list, burst_o
 
 
 if __name__ == "__main__":
-	dir = "/u/az6922/data/hetero-rtt-cc-after-aug30/"
+	dir = "/u/az6922/data/hetero-rtt-bb-before-sep2/"
 	start_list = [0,4500]
 	iw_list = [10,20,30]
 	numcontinuous = 10
