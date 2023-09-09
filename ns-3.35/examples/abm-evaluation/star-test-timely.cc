@@ -767,7 +767,7 @@ main (int argc, char *argv[])
 		uint64_t flowSize = 0;
 		double startTimeLongRTT = 0;
 		if (fsModeLongRTT == 0) {
-			flowSize = 1e9;
+			flowSize = 2e8;
 			startTimeLongRTT = rand_range(START_TIME,FLOW_LAUNCH_END_TIME);
 		} else if (fsModeLongRTT == 1) {
 			// flowSize = gen_random_cdf(cdfTable);

@@ -233,7 +233,8 @@ def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, na
 			for i in range(queuestart,queueend):
 				qsize_list_arr[i].append(float(array[3+5*i+offset]))
 
-	print(len(time_list))
+	print(name)
+	print(qsize_list_arr[4])
 	plt.clf()
 	fig, axs = plt.subplots(queueend-queuestart, figsize=(15,6*(queueend-queuestart)))
 	fig.suptitle(name+" of all ports over time")
@@ -245,13 +246,14 @@ def plot_sink_separate(file,plotname,numqueues, queuestart, queueend, offset, na
 
 if __name__ == "__main__":
 	dir = "/u/az6922/data/"
-	v = 8
-	file = dir + "tor-hetero-rtt-1-101-"+str(v)+".stat"
-	plotname = "hetero-rtt-bb-v"+str(v)
-	numcontinuous = 189
-	numbursty = 189
+	v = 10
+	cc = 1
+	file = dir + "tor-timely-"+str(cc)+"-101-"+str(v)+".stat"
+	plotname = "timely-v"+str(v)
+	numcontinuous = 1
+	numbursty = 0
 	numnodes = numcontinuous+numbursty
-	numsinks = 2
+	numsinks = 1
 	numqueuesperport = 3
 	timestart = 0
 	timeend = 1500 #1600 #10000
