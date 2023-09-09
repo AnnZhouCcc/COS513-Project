@@ -27,6 +27,7 @@
 
 # define PACKET_SIZE 1400
 # define GIGA 1000000000
+# define MEGA 1000000
 
 /*Buffer Management Algorithms*/
 # define DT 101
@@ -156,8 +157,8 @@ main (int argc, char *argv[])
 	// double serverLeafLinkLatencyShortRTT = 10;
 	double leafSinkLinkLatencyLongRTT = 10;
 	// double leafSinkLinkLatencyShortRTT = 1;
-	cmd.AddValue("serverLeafCapacity", "Server <-> Leaf capacity in Gbps", serverLeafCapacity);
-	cmd.AddValue("leafSinkCapacity", "Leaf <-> Sink capacity in Gbps", leafSinkCapacity);
+	cmd.AddValue("serverLeafCapacity", "Server <-> Leaf capacity in Mbps", serverLeafCapacity);
+	cmd.AddValue("leafSinkCapacity", "Leaf <-> Sink capacity in Mbps", leafSinkCapacity);
 	cmd.AddValue("serverLeafLinkLatencyLongRTT", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatencyLongRTT);
 	// cmd.AddValue("serverLeafLinkLatencyShortRTT", "Server <-> Leaf link latency in microseconds", serverLeafLinkLatencyShortRTT);
 	cmd.AddValue("leafSinkLinkLatencyLongRTT", "Leaf <-> Sink link latency in microseconds", leafSinkLinkLatencyLongRTT);
@@ -313,7 +314,7 @@ main (int argc, char *argv[])
 	// alpha_values[2] = shortRTTAlpha; //for short-RTT flows
 	aFile.close();
 
-	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatencyLongRTT+leafSinkCapacity*leafSinkLinkLatencyLongRTT)*2*GIGA*1e-6)/8;
+	double RTTBytes = ((serverLeafCapacity*serverLeafLinkLatencyLongRTT+leafSinkCapacity*leafSinkLinkLatencyLongRTT)*2*MEGA*1e-6)/8;
 	uint32_t RTTPackets = RTTBytes/PACKET_SIZE + 1;
 	baseRTTNano = (serverLeafLinkLatencyLongRTT+leafSinkLinkLatencyLongRTT)*2*1e3;
 	// nicBw = serverLeafCapacity+leafSinkCapacity;
@@ -505,7 +506,7 @@ main (int argc, char *argv[])
 	// An access link with long RTT //
 	//////////////////////////////////
 	PointToPointHelper accessLinkLongRTT;
-	accessLinkLongRTT.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*GIGA)));
+	accessLinkLongRTT.SetDeviceAttribute ("DataRate", DataRateValue(DataRate(serverLeafCapacity*MEGA)));
 	accessLinkLongRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(serverLeafLinkLatencyLongRTT)));
 	// if (dropTail) {
 	// 	accessLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue ("1000p"));
@@ -521,7 +522,7 @@ main (int argc, char *argv[])
 		genDisc->SetPortId(portid++);
 		// AnnC: [artemis-star-topology] Assume to be DT.
 		genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-		genDisc->setPortBw(serverLeafCapacity);
+		genDisc->setPortBw(serverLeafCapacity/1000.0); // AnnC: this seems to be in Gbps
 		genDisc->SetSharedMemory(sharedMemory);
 		genDisc->SetBufferAlgorithm(DT);
 		for(uint32_t n=0;n<nPrior;n++){
@@ -568,7 +569,7 @@ main (int argc, char *argv[])
 	// A bottleneck link with long RTT
 	///////////////////////////////
 	PointToPointHelper bottleneckLinkLongRTT;
-	bottleneckLinkLongRTT.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*GIGA)));
+	bottleneckLinkLongRTT.SetDeviceAttribute ("DataRate", DataRateValue (DataRate (leafSinkCapacity*MEGA)));
 	bottleneckLinkLongRTT.SetChannelAttribute ("Delay", TimeValue(MicroSeconds(leafSinkLinkLatencyLongRTT)));
 	// if (dropTail) {
 	// 	bottleneckLink.SetQueue ("ns3::DropTailQueue", "MaxSize", StringValue (std::to_string(queueDiscSize) + "p"));
@@ -583,7 +584,7 @@ main (int argc, char *argv[])
 	Ptr<GenQueueDisc> genDisc = DynamicCast<GenQueueDisc> (qdiscs.Get(0));
 	genDisc->SetPortId(portid++);
 	genDisc->setNPrior(nPrior); // IMPORTANT. This will also trigger "alphas = new ..."
-	genDisc->setPortBw(leafSinkCapacity);
+	genDisc->setPortBw(leafSinkCapacity/1000.0); // AnnC: setPortBw takes a double in Gbps
 	genDisc->SetSharedMemory(sharedMemory);
 	switch(algorithm){
 		case DT:
