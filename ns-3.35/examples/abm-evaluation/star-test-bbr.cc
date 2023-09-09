@@ -731,7 +731,7 @@ main (int argc, char *argv[])
 		uint64_t flowSize = 0;
 		double startTimeLongRTT = 0;
 		if (fsModeLongRTT == 0) {
-			flowSize = 2e8;
+			flowSize = 1e9;
 			startTimeLongRTT = rand_range(START_TIME,FLOW_LAUNCH_END_TIME);
 		} else if (fsModeLongRTT == 1) {
 			// flowSize = gen_random_cdf(cdfTable);
@@ -774,6 +774,7 @@ main (int argc, char *argv[])
 
 		Ptr<BulkSendApplication> bulksend = CreateObject<BulkSendApplication>();
 		bulksend->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+		std::cout << "BulkSendApplication Protocol = " << TcpSocketFactory::GetTypeId().GetName() << std::endl;
 		bulksend->SetAttribute("Remote",AddressValue(sinkAddress)); 
 		bulksend->SetAttribute ("SendSize", UintegerValue (flowSize));
         bulksend->SetAttribute ("MaxBytes", UintegerValue(flowSize));
@@ -789,6 +790,7 @@ main (int argc, char *argv[])
 		PacketSinkHelper packetSink("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), portnumber));
 		ApplicationContainer sinkApp = packetSink.Install(sinkcontainers.Get(sink));
 		sinkApp.Get(0)->SetAttribute("Protocol",TypeIdValue(TcpSocketFactory::GetTypeId()));
+		std::cout << "PacketSinkHelper Protocol = " << TcpSocketFactory::GetTypeId().GetName() << std::endl;
 		sinkApp.Get(0)->SetAttribute("TotalQueryBytes",UintegerValue(flowSize));
 		sinkApp.Get(0)->SetAttribute("flowId", UintegerValue(flowcount++));
 		sinkApp.Get(0)->SetAttribute("senderPriority",UintegerValue(flowPriority));
