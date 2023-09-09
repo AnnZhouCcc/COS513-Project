@@ -39,12 +39,13 @@
 /*Congestion Control Algorithms*/
 # define RENO 0
 # define CUBIC 1
-# define DCTCP 2
-# define HPCC 3
-# define POWERTCP 4
-# define HOMA 5
-# define TIMELY 6
-# define THETAPOWERTCP 7
+// # define DCTCP 2
+// # define HPCC 3
+// # define POWERTCP 4
+// # define HOMA 5
+// # define TIMELY 6
+// # define THETAPOWERTCP 7
+# define BBR 8
 
 // #define PORT_END 65530
 
@@ -427,55 +428,18 @@ main (int argc, char *argv[])
 				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
 			}
         	break;
-        case DCTCP:
-        	Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpDctcp::GetTypeId()));
-			Config::SetDefault ("ns3::RedQueueDisc::UseEcn", BooleanValue (true));
-			Config::SetDefault ("ns3::RedQueueDisc::QW", DoubleValue (1.0));
-			Config::SetDefault ("ns3::RedQueueDisc::MinTh", DoubleValue (RedMinTh*PACKET_SIZE));
-			Config::SetDefault ("ns3::RedQueueDisc::MaxTh", DoubleValue (RedMaxTh*PACKET_SIZE));
-			Config::SetDefault ("ns3::RedQueueDisc::MaxSize", QueueSizeValue (QueueSize ("100MB"))); // This is just for initialization. The buffer management algorithm will take care of the rest.
-			Config::SetDefault ("ns3::TcpSocketBase::UseEcn", StringValue ("On"));
-			Config::SetDefault ("ns3::RedQueueDisc::LInterm", DoubleValue (0.0));
-			Config::SetDefault ("ns3::RedQueueDisc::UseHardDrop", BooleanValue (false));
-			Config::SetDefault ("ns3::RedQueueDisc::Gentle", BooleanValue (false));
-			Config::SetDefault ("ns3::RedQueueDisc::MeanPktSize", UintegerValue (PACKET_SIZE));
-			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
-			UseEcn =1;
-			ecnEnabled = "EcnEnabled";
-			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
-			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
+		case BBR:
+        	Config::SetDefault ("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpBbr::GetTypeId()));
+        	Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
+        	Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
+        	Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
 			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
 			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
 		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
-			for(uint32_t num=0;num<nPrior;num++){
-				tc.AddChildQueueDisc (handle, cid[num], "ns3::RedQueueDisc", "MinTh", DoubleValue (RedMinTh*PACKET_SIZE), "MaxTh", DoubleValue (RedMaxTh*PACKET_SIZE));
-			}
-			break;
-		case TIMELY:
-			Config::SetDefault("ns3::TcpL4Protocol::SocketType", TypeIdValue (ns3::TcpWien::GetTypeId()));
-			Config::SetDefault("ns3::TcpSocketBase::Sack", BooleanValue(false));
-			Config::SetDefault("ns3::TcpSocketState::initWienRate", DataRateValue(DataRate(leafSinkCapacity*GIGA)));
-			Config::SetDefault("ns3::TcpSocketState::minWienRate", DataRateValue(DataRate("50Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::maxWienRate", DataRateValue(DataRate(leafSinkCapacity*GIGA)));
-			Config::SetDefault("ns3::TcpSocketState::AIWien", DataRateValue(DataRate("10Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::HighAIWien", DataRateValue(DataRate("150Mbps")));
-			Config::SetDefault("ns3::TcpSocketState::useTimely", BooleanValue(true));
-			Config::SetDefault("ns3::TcpSocketState::baseRtt", TimeValue(MicroSeconds((serverLeafLinkLatencyLongRTT+leafSinkLinkLatencyLongRTT)*2 + double(PACKET_SIZE*8)/(serverLeafCapacity*1000) + double(PACKET_SIZE*8)/(leafSinkCapacity*1000))));
-			// Config::SetDefault("ns3::TcpSocketState::TimelyTlow", UintegerValue(((serverLeafLinkLatencyLongRTT+leafSinkLinkLatencyLongRTT)*2*1.5)*1000)); // in nanoseconds
-			// Config::SetDefault("ns3::TcpSocketState::TimelyThigh", UintegerValue(((serverLeafLinkLatencyLongRTT+leafSinkLinkLatencyLongRTT)*2*1.5)*1000)); // in nanoseconds
-			// AnnC: ignore Tlow and Thigh for now
-			Config::SetDefault("ns3::TcpSocketState::TimelyTlow", UintegerValue(0));
-			Config::SetDefault("ns3::TcpSocketState::TimelyThigh", UintegerValue(GIGA));
-			Config::SetDefault ("ns3::Ipv4GlobalRouting::FlowEcmpRouting", BooleanValue(true));
-			Config::SetDefault("ns3::GenQueueDisc::nPrior", UintegerValue(nPrior));
-			Config::SetDefault("ns3::GenQueueDisc::RoundRobin", UintegerValue(1));
-			Config::SetDefault("ns3::GenQueueDisc::StrictPriority", UintegerValue(0));
-			handle = tc.SetRootQueueDisc ("ns3::GenQueueDisc");
-		    cid = tc.AddQueueDiscClasses (handle, nPrior , "ns3::QueueDiscClass");
-			for(uint32_t num=0;num<nPrior;num++){
+		    for(uint32_t num=0;num<nPrior;num++){
 				tc.AddChildQueueDisc (handle, cid[num], "ns3::FifoQueueDisc");
 			}
-			break;
+        	break;
 		default:
 			std::cout << "Error in CC configuration" << std::endl;
 			return 0;
